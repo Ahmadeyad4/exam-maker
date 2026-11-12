@@ -3,7 +3,15 @@ android {
     namespace 'iq.exam.maker'
     compileSdk 34
     defaultConfig { applicationId 'iq.exam.maker'; minSdk 29; targetSdk 34; versionCode 1; versionName '1.0' }
-    buildTypes { release { minifyEnabled false } }
+    signingConfigs {
+        release {
+            storeFile file('exam-release.jks')
+            storePassword 'exam123456'
+            keyAlias 'exam'
+            keyPassword 'exam123456'
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
     kotlinOptions { jvmTarget = '1.8' }
 }
