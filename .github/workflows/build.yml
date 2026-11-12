@@ -3,6 +3,8 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,8 +17,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.7
-      - run: gradle assembleRelease
+      - run: gradle assembleRelease -PverCode=${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: ExamMaker-apk
           path: app/build/outputs/apk/release/*.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Version ${{ github.run_number }}
+          files: app/build/outputs/apk/release/app-release.apk
