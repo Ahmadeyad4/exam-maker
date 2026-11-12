@@ -2,7 +2,7 @@ plugins { id 'com.android.application'; id 'org.jetbrains.kotlin.android' }
 android {
     namespace 'iq.exam.maker'
     compileSdk 34
-    defaultConfig { applicationId 'iq.exam.maker'; minSdk 29; targetSdk 34; versionCode 1; versionName '1.0' }
+    defaultConfig { applicationId 'iq.exam.maker'; minSdk 29; targetSdk 34; versionCode Integer.parseInt((project.findProperty('verCode') ?: '1').toString()); versionName "1.${project.findProperty('verCode') ?: '0'}" }
     signingConfigs {
         release {
             storeFile file('exam-release.jks')
