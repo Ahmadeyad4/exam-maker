@@ -15,8 +15,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.7
-      - run: gradle assembleDebug
+      - run: gradle assembleRelease
       - uses: actions/upload-artifact@v4
         with:
           name: ExamMaker-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/release/*.apk
