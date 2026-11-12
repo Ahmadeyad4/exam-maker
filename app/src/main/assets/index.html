@@ -43,28 +43,34 @@ textarea{min-height:84px;resize:vertical}
 .mk{float:left;font-weight:700;border:1px solid #000;padding:0 8px;border-radius:4px;font-size:.9em}
 .sub{margin:2px 28px 2px 0}
 .hd{grid-template-columns:1fr 1.3fr 1fr;align-items:start;border-bottom:1px solid #000;padding-bottom:26px;margin-bottom:30px}.hd .c{font-weight:inherit}.hd .l,.hd .r{text-align:right}.hd .l{justify-self:end}.qt{margin:0;padding:6px 0 18px;border-bottom:1px solid #000}.qh2{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}.mk{float:none;border:0;padding:0;font-weight:inherit;white-space:nowrap}.it{margin:2px 28px 2px 0}.ft{display:grid;grid-template-columns:1fr 1fr;row-gap:28px;margin-top:30px}.tc{text-align:center}.tc:first-child{justify-self:start}.tc:last-child{justify-self:end}.wish{grid-column:1/3;order:3;text-align:center}
+#start{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));text-align:center}#start h2{margin:0}.sc{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:center}.big{width:150px;height:130px;border-radius:18px;border:2px solid var(--ac);background:var(--sf);color:var(--tx);font:inherit;font-size:19px;font-weight:700}.big:active{background:var(--ac);color:#fff}[dir=ltr] .hd .l,[dir=ltr] .hd .r{text-align:left}
+.en .it{margin:2px 0 2px 28px}
+.b-h1{font-size:1.45em;font-weight:700;margin:14px 0 8px;border-bottom:2px solid #000;padding-bottom:4px}.b-h2{font-size:1.2em;font-weight:700;margin:10px 0 4px}.b-tx{margin:4px 0}.b-bx{border:1.5px solid #0f6e5c;background:#eef6f3;border-radius:6px;padding:8px 12px;margin:10px 0}.b-bx .bl{font-weight:700;color:#0f6e5c;margin-bottom:2px}.b-im{text-align:center;margin:10px 0}.b-im img{max-width:100%}.b-im .cap{font-size:.8em;margin-top:2px}.pgb{border-top:1px dashed #999;height:12px;font-size:10px;line-height:12px;color:#999;text-align:center;margin:6px 0}.blk{break-inside:avoid}@media print{.pgb{break-after:page;border:0;height:0;font-size:0;margin:0}}.en{text-align:left}
 .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.1;margin:0 3px;font-size:.9em;direction:ltr}
 .fr i{font-style:normal;padding:0 3px}.fr i:first-child{border-bottom:1px solid #000}
 @media print{body{background:#fff}.tabs,#ed,.noprint{display:none!important}#prev{display:block!important;padding:0}#wrap{height:auto!important}#paper{zoom:1!important;transform:none!important;box-shadow:none;margin:0;width:100%}@page{size:A4;margin:0}}
 </style>
 </head>
 <body>
-<div class="tabs"><button id="t1" class="on">✏️ تحرير</button><button id="t2">👁 معاينة</button></div>
+<div id="start"><h2 id="sh">شنو تريد تسوي؟</h2>
+<div id="s1" class="sc"><button class="big" data-m="q">📝<br>أسئلة امتحان</button><button class="big" data-m="b">📚<br>ملزمة</button></div>
+<div id="s2" class="sc" style="display:none"><button class="big" data-l="ar">عربي</button><button class="big" data-l="en">English</button><button class="btn o" id="sb">رجوع</button></div></div>
+<div class="tabs"><button id="t0" style="flex:.35">🏠</button><button id="t1" class="on">✏️ تحرير</button><button id="t2">👁 معاينة</button></div>
 
 <div id="ed">
 <div class="card"><h3>معلومات الورقة</h3>
 <div class="grid">
-<div style="grid-column:1/3"><label>اسم المدرسة (يمين الورقة)</label><input id="school" value="ادارة مدرسة ابو ذر الغفاري الابتدائية للبنات"></div>
-<div style="grid-column:1/3"><label>عنوان الامتحان (وسط الورقة)</label><input id="kind" value="اسئلة امتحان الشهر الثاني /الفصل الثاني"></div>
-<div><label>العام الدراسي</label><input id="year" value="٢٠٢٥-٢٠٢٦"></div>
+<div style="grid-column:1/3"><label>اسم المدرسة (يمين الورقة)</label><input id="school"></div>
+<div style="grid-column:1/3"><label>عنوان الامتحان (وسط الورقة)</label><input id="kind"></div>
+<div><label>العام الدراسي</label><input id="year"></div>
 <div><label>الزمن (اختياري)</label><input id="time"></div>
-<div><label>المادة</label><input id="subj" value="الاجتماعيات"></div>
-<div><label>الصف</label><input id="grade" value="الخامس"></div>
-<div><label>صفة المعلم (يسار الورقة)</label><input id="teachl" value="معلمة المادة"></div>
-<div><label>اسم المعلم (يسار)</label><input id="teacher" value="رسل محمد حمود"></div>
+<div><label>المادة</label><input id="subj"></div>
+<div><label>الصف</label><input id="grade"></div>
+<div><label>صفة المعلم (يسار الورقة)</label><input id="teachl"></div>
+<div><label>اسم المعلم (يسار)</label><input id="teacher"></div>
 <div><label>صفة معلم ثاني (يمين الورقة)</label><input id="teachl2"></div>
 <div><label>اسم المعلم الثاني (يمين)</label><input id="teacher2"></div>
-<div style="grid-column:1/3"><label>عبارة نهاية الورقة</label><input id="wish" value="مع تمنياتي لكن بالنجاح والتوفيق"></div>
+<div style="grid-column:1/3"><label>عبارة نهاية الورقة</label><input id="wish"></div>
 </div>
 <div class="row" style="margin-top:8px"><label style="margin:0">شعار المدرسة:</label><input type="file" id="logo" accept="image/*" style="flex:1"></div>
 </div>
@@ -75,12 +81,12 @@ textarea{min-height:84px;resize:vertical}
 <div><label>الخطوط بين الأسئلة</label><select id="ql"><option value="1px solid #000">عادية</option><option value="2px solid #000">سميكة</option><option value="1px dotted #000">منقطة</option><option value="0">بدون</option></select></div>
 <div style="grid-column:1/3"><label>المسافة بين الأسئلة (قلّلها إذا الأسئلة كثيرة)</label><select id="qsp"><option value="0">واسعة</option><option value="1">متوسطة</option><option value="2">ضيقة</option><option value="3">ملاصقة</option></select></div>
 </div></div>
-<div class="card"><h3>الأسئلة</h3>
+<div class="card"><h3 id="qtitle">الأسئلة</h3>
 <div id="qs"></div>
-<div class="row"><button class="btn o" id="add">+ سؤال جديد</button><label style="margin:0"><input type="checkbox" id="one" style="width:auto"> صفحة واحدة (ضبط الخط تلقائياً)</label></div>
-<p class="hint">اكتب كل فقرة بسطر جديد. السطر اللي يبدي بـ ‎-‎ يصير فقرة مرقمة (١، ٢، ٣)، وأول سطر هو نص السؤال. الكسور: اكتب ‎{1/2}‎ ويطلع كسر.</p>
+<div class="row" id="chips" style="display:none;margin-bottom:8px"></div><div class="row"><button class="btn o" id="add">+ سؤال جديد</button><label style="margin:0"><input type="checkbox" id="one" style="width:auto"> صفحة واحدة (ضبط الخط تلقائياً)</label><label style="margin:0;display:none" id="pnl"><input type="checkbox" id="pn" style="width:auto" checked> ترقيم الصفحات</label></div>
+<p class="hint" id="hint">اكتب كل فقرة بسطر جديد. السطر اللي يبدي بـ ‎-‎ يصير فقرة مرقمة (١، ٢، ٣)، وأول سطر هو نص السؤال. الكسور: اكتب ‎{1/2}‎ ويطلع كسر.</p>
 </div>
-<div class="card row"><button class="btn" id="go">معاينة وطباعة</button></div>
+<div class="card row"><button class="btn" id="go">معاينة وطباعة</button><button class="btn x" id="rst">مسح كل شي</button></div>
 </div>
 
 <div id="prev">
@@ -90,30 +96,55 @@ textarea{min-height:84px;resize:vertical}
 
 <script>
 const $=id=>document.getElementById(id);
-const FO=[["'Noto Naskh Arabic',serif",'نسخ'],["'Amiri',serif",'أميري'],["'Scheherazade New',serif",'شهرزاد'],["'Cairo',sans-serif",'القاهرة'],["'Tajawal',sans-serif",'تجوال'],["'Almarai',sans-serif",'المراعي'],['Tahoma,sans-serif','Tahoma']],WO=[['400','عادي'],['500','متوسط'],['600','عريض'],['700','سميك']];
+const FO=[["'Noto Naskh Arabic',serif",'نسخ'],["'Amiri',serif",'أميري'],["'Scheherazade New',serif",'شهرزاد'],["'Cairo',sans-serif",'القاهرة'],["'Tajawal',sans-serif",'تجوال'],["'Almarai',sans-serif",'المراعي'],['Tahoma,sans-serif','Tahoma'],["'Times New Roman',serif",'Times New Roman'],['Arial,sans-serif','Arial']],WO=[['400','عادي'],['500','متوسط'],['600','عريض'],['700','سميك']];
 [['H','الترويسة (المدرسة، العنوان، السنة، المادة، الصف، الوقت)'],['Q','الأسئلة'],['W','عبارة نهاية الأسئلة'],['T','صفة المعلم واسمه']].forEach(a=>{const d=document.createElement('div');d.style.marginBottom='10px';
 d.innerHTML='<label><b>'+a[1]+'</b> <span class="hint">(النوع · القوة · الحجم)</span></label><div class="grid" style="grid-template-columns:1.5fr 1fr .8fr"><select id="ff'+a[0]+'">'+FO.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select><select id="fw'+a[0]+'">'+WO.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select><input type="number" id="fs'+a[0]+'" value="22" min="8" max="48" title="الحجم"></div>';$('fonts').appendChild(d)});
 const F=['school','subj','grade','time','teacher','kind','year','teachl','wish','teachl2','teacher2','ffH','fwH','ffQ','fwQ','ffW','fwW','ffT','fwT','fsH','fsQ','fsW','fsT','hl','ql','qsp'];
-let qs=[{t:'',m:''}],logo='';
+let qs=[{t:'',m:''}],logo='',mode='q',lang='ar',KEY='ex_q_ar',pm='q',bl=[];
 const AB=['أ','ب','ج','د','هـ','و','ز','ح'];
-function save(){try{localStorage.setItem('exam1',JSON.stringify({f:F.map(k=>$(k).value),qs,logo,one:$('one').checked}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem('exam1')||'null');if(d){F.forEach((k,i)=>$(k).value=d.f[i]||$(k).value);qs=d.qs||qs;logo=d.logo||'';$('one').checked=!!d.one}}catch(e){}}
-function renderQs(){$('qs').innerHTML='';qs.forEach((q,i)=>{const d=document.createElement('div');d.className='q';
-d.innerHTML='<div class="qh"><b>س'+(i+1)+'</b><div><label>الدرجة</label><input type="number" value="'+q.m+'"></div><button class="btn x">حذف</button></div><textarea placeholder="نص السؤال...">'+q.t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>';
-d.querySelector('input').oninput=e=>{q.m=e.target.value;save()};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({f:F.map(k=>$(k).value),qs,logo,one:$('one').checked,bl,pn:$('pn').checked}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){F.forEach((k,i)=>$(k).value=d.f[i]||$(k).value);qs=d.qs||qs;bl=d.bl||[];logo=d.logo||'';$('one').checked=!!d.one;$('pn').checked=d.pn!==false}}catch(e){}}
+const TN={h1:'عنوان كبير',h2:'عنوان صغير',tx:'شرح',bu:'نقاط',nu:'ترقيم',bx:'صندوق',im:'صورة',pb:'فاصل صفحة'},BA=['تعريف','ملاحظة','تذكّر','مثال','مهم'],BE=['Definition','Note','Remember','Example','Important'];
+function imgLoad(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1400/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.85),c.width,c.height)};im.src=r.result};r.readAsDataURL(f)}
+function mv(i,d){const j=i+d;if(j<0||j>=bl.length)return;[bl[i],bl[j]]=[bl[j],bl[i]];renderBl();save()}
+function chips(){const c=$('chips');c.innerHTML='';Object.keys(TN).forEach(k=>{const b=document.createElement('button');b.className='btn o';b.style.padding='6px 10px';b.textContent='+ '+TN[k];b.onclick=()=>{bl.push({k,t:'',bt:0,w:80});renderBl();save()};c.appendChild(b)})}
+function renderBl(){const c=$('qs');c.innerHTML='';bl.forEach((b,i)=>{const d=document.createElement('div');d.className='q';
+let h='<div class="qh"><b>'+TN[b.k]+'</b><div></div><button class="btn o" data-a="u">▲</button><button class="btn o" data-a="d">▼</button><button class="btn o" data-a="c">⧉</button><button class="btn x" data-a="x">✕</button></div>';
+if(b.k==='bx')h+='<select class="bt" style="margin-bottom:6px">'+BA.map((x,n)=>'<option value="'+n+'"'+(n==b.bt?' selected':'')+'>'+x+'</option>').join('')+'</select>';
+if(b.k==='im')h+='<input type="file" accept="image/*" class="fi">'+(b.d?'<img src="'+b.d+'" style="max-width:100%;max-height:120px;display:block;margin:6px 0">':'')+'<input class="cp" placeholder="تعليق الصورة (اختياري)" style="margin:4px 0"><label>عرض الصورة %</label><select class="wd">'+[40,60,80,100].map(x=>'<option'+(x==(b.w||80)?' selected':'')+'>'+x+'</option>').join('')+'</select>';
+else if(b.k==='pb')h+='<div class="hint">تبدأ صفحة جديدة من هنا</div>';
+else h+='<textarea style="min-height:'+(b.k==='h1'||b.k==='h2'?44:110)+'px" placeholder="'+(b.k==='bu'||b.k==='nu'?'كل سطر نقطة...':'اكتب هنا...')+'">'+esc(b.t||'')+'</textarea>';
+d.innerHTML=h;
+d.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>{const a=x.dataset.a;if(a==='u')mv(i,-1);else if(a==='d')mv(i,1);else if(a==='c'){bl.splice(i+1,0,{...b});renderBl();save()}else{bl.splice(i,1);renderBl();save()}});
+const ta=d.querySelector('textarea');if(ta)ta.oninput=e=>{b.t=e.target.value;save()};
+const bt=d.querySelector('.bt');if(bt)bt.onchange=e=>{b.bt=+e.target.value;save()};
+const fi=d.querySelector('.fi');if(fi)fi.onchange=e=>{const f=e.target.files[0];if(f)imgLoad(f,(u,w,hh)=>{b.d=u;b.iw=w;b.ih=hh;renderBl();save()})};
+const cp=d.querySelector('.cp');if(cp){cp.value=b.c||'';cp.oninput=e=>{b.c=e.target.value;save()}}
+const wd=d.querySelector('.wd');if(wd)wd.onchange=e=>{b.w=+e.target.value;save()};
+c.appendChild(d)})}
+function renderQs(){if(mode==='b')return renderBl();$('qs').innerHTML='';qs.forEach((q,i)=>{const d=document.createElement('div');d.className='q';
+d.innerHTML='<div class="qh"><b>'+(mode==='b'?'قسم ':'س')+(i+1)+'</b>'+(mode==='b'?'<div></div>':'<div><label>الدرجة</label><input type="number" value="'+q.m+'"></div>')+'<button class="btn x">حذف</button></div><textarea placeholder="نص السؤال...">'+q.t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>';
+const mi=d.querySelector('input');if(mi)mi.oninput=e=>{q.m=e.target.value;save()};
 d.querySelector('textarea').oninput=e=>{q.t=e.target.value;save()};
 d.querySelector('button').onclick=()=>{qs.splice(i,1);if(!qs.length)qs.push({t:'',m:''});renderQs();save()};
 $('qs').appendChild(d)})}
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const fmt=s=>esc(s).replace(/\{([^{}\/]+)\/([^{}]+)\}/g,'<span class="fr"><i>$1</i><i>$2</i></span>');
-function build(){const QP=['6px 0 18px','5px 0 10px','3px 0 5px','1px 0 2px'],HP=['padding-bottom:20px;margin-bottom:22px','padding-bottom:14px;margin-bottom:14px','padding-bottom:8px;margin-bottom:8px','padding-bottom:4px;margin-bottom:4px'],qi=+$('qsp').value,S=k=>'font-family:'+$('ff'+k).value+';font-weight:'+$('fw'+k).value+';font-size:'+((+$('fs'+k).value||22)/22)+'em',v=k=>esc($(k).value),ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
-let h='<div class="hd" style="'+S('H')+';border-bottom:'+$('hl').value+';'+HP[qi]+'"><div class="r">'+v('school')+'</div><div class="c">'+(logo?'<img src="'+logo+'"><br>':'')+v('kind')+'<br>'+($('year').value?'للعام الدراسي ('+v('year')+')':'')+'</div><div class="l">المادة : '+v('subj')+'<br>الصف : '+v('grade')+($('time').value?'<br>الزمن : '+v('time'):'')+'</div></div>';
-qs.forEach((q,i)=>{const L=q.t.split('\n').filter(x=>x.trim());if(!L.length)return;let j=0;
-h+='<div class="qt" style="'+S('Q')+';border-bottom:'+$('ql').value+';padding:'+QP[qi]+'"><div class="qh2"><span>س'+ar(i+1)+'/'+fmt(L[0])+'</span>'+(q.m?'<span class="mk">('+ar(q.m)+' درجة)</span>':'')+'</div>';
-L.slice(1).forEach(l=>{h+='<div class="it">'+(/^\s*-/.test(l)?ar(++j)+'- '+fmt(l.replace(/^\s*-\s*/,'')):fmt(l))+'</div>'});h+='</div>'});
-h+='<div class="ft"><div class="tc" style="'+S('T')+'">'+(v('teachl2')||v('teacher2')?v('teachl2')+'<br>'+v('teacher2'):'')+'</div><div class="wish" style="'+S('W')+'">'+v('wish')+'</div><div class="tc" style="'+S('T')+'">'+v('teachl')+'<br>'+v('teacher')+'</div></div>';
-const p=$('paper');p.innerHTML=h;p.className=$('one').checked?'one':'';p.style.fontSize='22px';
-if($('one').checked){let s=22;while(p.scrollHeight>p.clientHeight+1&&s>7){s-=.5;p.style.fontSize=s+'px'}}
+function build(){const EN=lang==='en',BK=mode==='b',QP=['6px 0 18px','5px 0 10px','3px 0 5px','1px 0 2px'],HP=['padding-bottom:20px;margin-bottom:22px','padding-bottom:14px;margin-bottom:14px','padding-bottom:8px;margin-bottom:8px','padding-bottom:4px;margin-bottom:4px'],qi=+$('qsp').value,S=k=>'font-family:'+$('ff'+k).value+';font-weight:'+$('fw'+k).value+';font-size:'+((+$('fs'+k).value||22)/22)+'em',v=k=>esc($(k).value),ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+let h='<div class="hd" style="'+S('H')+';border-bottom:'+$('hl').value+';'+HP[qi]+'"><div class="r">'+v('school')+'</div><div class="c">'+(logo?'<img src="'+logo+'"><br>':'')+v('kind')+'<br>'+($('year').value?(EN?'Academic year (':'للعام الدراسي (')+v('year')+')':'')+'</div><div class="l">'+(EN?'Subject : ':'المادة : ')+v('subj')+'<br>'+(EN?'Grade : ':'الصف : ')+v('grade')+($('time').value?'<br>'+(EN?'Time : ':'الزمن : ')+v('time'):'')+'</div></div>';
+(BK?[]:qs).forEach((q,i)=>{const L=q.t.split('\n').filter(x=>x.trim());if(!L.length)return;let j=0;
+const en=EN,ar2=en?(x=>String(x)):ar;h+='<div class="qt'+(en?' en':'')+'"'+(en?' dir="ltr"':'')+' style="'+S('Q')+';border-bottom:'+$('ql').value+';padding:'+QP[qi]+'"><div class="qh2"><span>'+(BK?'<b>'+fmt(L[0])+'</b>':(en?'Q':'س')+ar2(i+1)+'/'+fmt(L[0]))+'</span>'+(q.m&&!BK?'<span class="mk">('+ar2(q.m)+(en?' marks':' درجة')+')</span>':'')+'</div>';
+L.slice(1).forEach(l=>{h+='<div class="it">'+(/^\s*-/.test(l)?(BK?'• ':ar2(++j)+'- ')+fmt(l.replace(/^\s*-\s*/,'')):fmt(l))+'</div>'});h+='</div>'});
+if(BK)bl.forEach(b=>{const L=(b.t||'').split('\n').filter(x=>x.trim()),F=fmt,Wb=(c,x)=>'<div class="blk" style="'+S('Q')+'"><div class="'+c+'">'+x+'</div></div>';
+if(b.k==='pb')h+='<div class="pgb">— فاصل صفحة —</div>';
+else if(b.k==='h1'||b.k==='h2')h+=Wb('b-'+b.k,F(L.join(' ')));
+else if(b.k==='tx')h+=Wb('b-tx',L.map(x=>'<div>'+F(x)+'</div>').join(''));
+else if(b.k==='bu'||b.k==='nu')h+=Wb('b-tx',L.map((x,n)=>'<div class="it">'+(b.k==='bu'?'• ':(EN?n+1:ar(n+1))+'- ')+F(x)+'</div>').join(''));
+else if(b.k==='bx')h+=Wb('b-bx','<div class="bl">'+(EN?BE:BA)[b.bt|0]+'</div>'+L.map(x=>'<div>'+F(x)+'</div>').join(''));
+else if(b.k==='im'&&b.d)h+=Wb('b-im','<img src="'+b.d+'" style="width:'+(b.w||80)+'%">'+(b.c?'<div class="cap">'+esc(b.c)+'</div>':''))});
+h+='<div class="ft"><div class="tc\" style="'+S('T')+'">'+(v('teachl2')||v('teacher2')?v('teachl2')+'<br>'+v('teacher2'):'')+'</div><div class="wish" style="'+S('W')+'">'+v('wish')+'</div><div class="tc" style="'+S('T')+'">'+v('teachl')+'<br>'+v('teacher')+'</div></div>';
+const p=$('paper');p.innerHTML=h;p.dir=EN?'ltr':'rtl';p.className=$('one').checked&&!BK?'one':'';p.style.fontSize='22px';
+if($('one').checked&&!BK){let s=22;while(p.scrollHeight>p.clientHeight+1&&s>7){s-=.5;p.style.fontSize=s+'px'}}
 fit()}
 function buildOld(){const v=k=>esc($(k).value);
 let h='<div class="hd"><div>'+v('school')+'<br>'+v('subj')+'</div><div class="c">'+(logo?'<img src="'+logo+'"><br>':'')+v('kind')+'</div><div style="text-align:left">'+v('grade')+'<br>الزمن: '+v('time')+'</div></div>';
@@ -135,29 +166,56 @@ F.forEach(k=>$(k).addEventListener('input',save));$('one').onchange=save;
 async function dl(n,b){if(window.Android){const r=new FileReader();r.onload=()=>Android.save(n,String(r.result).split(',')[1]);r.readAsDataURL(b);return}try{const d=window.claude?await claude.use('downloads'):null;if(d){await d.save({filename:n,data:b});return}}catch(e){if(e&&e.code==='declined')return}
 const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove()}
 async function pdf(){build();await document.fonts.ready;const p=$('paper'),z=p.style.zoom;p.style.zoom=1;
+const T=[...p.children].map(k=>[k.offsetTop,k.offsetTop+k.offsetHeight,k.classList.contains('pgb')]),tot=p.scrollHeight,pw=p.offsetWidth;
 const c=await html2canvas(p,{scale:3,backgroundColor:'#fff',useCORS:true,scrollX:0,scrollY:-scrollY});p.style.zoom=z;
-const d=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),W=210,ph=Math.floor(c.width*297/210);let y=0,f=1;
-while(y<c.height-2){const t=document.createElement('canvas');t.width=c.width;t.height=Math.min(ph,c.height-y);t.getContext('2d').drawImage(c,0,y,c.width,t.height,0,0,c.width,t.height);if(!f)d.addPage();f=0;d.addImage(t.toDataURL('image/jpeg',.97),'JPEG',0,0,W,t.height*W/c.width);y+=ph}
-await dl('exam.pdf',d.output('blob'))}
+const K=c.width/pw,pg=[];
+if(tot<=1126)pg.push([0,tot]);else{let y=0,f=1;while(y<tot-2){const cap=f?1099:1069;let e=y+cap,nx=0;
+if(e>=tot)e=tot;else{const fb=T.find(t=>t[2]&&t[0]>y&&t[0]<e);if(fb){e=fb[0];nx=fb[1]}else{const st=T.find(t=>t[0]<e&&t[1]>e&&t[1]-t[0]<=cap);if(st&&st[0]>y+40)e=st[0]}}
+pg.push([y,e]);y=nx||e;f=0}}
+const d=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),mm=210/pw,pn=mode==='b'&&$('pn').checked;
+pg.forEach((q,i)=>{const t=document.createElement('canvas'),h=Math.max(1,Math.round((q[1]-q[0])*K));t.width=c.width;t.height=h;t.getContext('2d').drawImage(c,0,Math.round(q[0]*K),c.width,h,0,0,c.width,h);if(i)d.addPage();d.addImage(t.toDataURL('image/jpeg',.97),'JPEG',0,i?30*mm:0,210,h/K*mm);if(pn){d.setFontSize(10);d.text(String(i+1),105,291,{align:'center'})}});
+await dl((mode==='b'?'malzama':'exam')+'.pdf',d.output('blob'))}
 async function wordDoc(){
-const AR=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]),x=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'),v=k=>$(k).value,
+let XB=0,XS=0;const BKM=mode==='b',LT=lang==='en',AR=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]),x=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'),v=k=>$(k).value,
 SZ=k=>Math.round((+v('fs'+k)||22)*1.27),FN=k=>x(v('ff'+k).split(',')[0].replace(/["']/g,'').trim()),BD=k=>+v('fw'+k)>=600,fr=s=>s.replace(/\{([^{}\/]+)\/([^{}]+)\}/g,'$1/$2'),
-R=(t,k)=>`<w:r><w:rPr><w:rFonts w:ascii="${FN(k)}" w:hAnsi="${FN(k)}" w:cs="${FN(k)}"/>${BD(k)?'<w:b/><w:bCs/>':''}<w:sz w:val="${SZ(k)}"/><w:szCs w:val="${SZ(k)}"/><w:rtl/></w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`,
-P=(t,jc,k,bd,sp)=>`<w:p><w:pPr>${bd||''}<w:spacing w:after="${sp||80}"/><w:bidi/><w:jc w:val="${jc||'left'}"/></w:pPr>${t.split('\n').map((l,i)=>(i?'<w:r><w:br/></w:r>':'')+R(l,k)).join('')}</w:p>`,
-T=(w,cs)=>`<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="9500" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${w.map(a=>`<w:gridCol w:w="${a}"/>`).join('')}</w:tblGrid><w:tr>${cs.map((c,i)=>`<w:tc><w:tcPr><w:tcW w:w="${w[i]}" w:type="dxa"/></w:tcPr>${c||'<w:p/>'}</w:tc>`).join('')}</w:tr></w:tbl>`;
-const BRD=q=>q==='0'?'':'<w:pBdr><w:bottom w:val="'+(/dotted/.test(q)?'dotted':'single')+'" w:sz="'+(/^2px/.test(q)?12:6)+'" w:space="4" w:color="000000"/></w:pBdr>',SPW=[120,80,40,20][+v('qsp')];
-let b=T([3200,3100,3200],[P(v('school'),'left','H'),P(v('kind')+(v('year')?'\nللعام الدراسي ('+v('year')+')':''),'center','H'),P('المادة : '+v('subj')+'\nالصف : '+v('grade')+(v('time')?'\nالزمن : '+v('time'):''),'left','H')])+P('','left','H',BRD(v('hl')),200);
-qs.forEach((q,i)=>{const L=q.t.split('\n').filter(s=>s.trim());if(!L.length)return;let j=0;
-b+=T([8000,1500],[P('س'+AR(i+1)+'/'+fr(L[0]),'left','Q',0,120),q.m?P('('+AR(q.m)+' درجة)','right','Q',0,120):''])+L.slice(1).map(l=>P(/^\s*-/.test(l)?AR(++j)+'- '+fr(l.replace(/^\s*-\s*/,'')):fr(l),'left','Q',0,60)).join('')+P('','left','Q',BRD(v('ql')),SPW)});
-b+=T([4750,4750],[v('teachl2')||v('teacher2')?P(v('teachl2')+'\n'+v('teacher2'),'left','T'):'',P(v('teachl')+'\n'+v('teacher'),'right','T')])+P('','left','W')+P(v('wish'),'center','W');
+R=(t,k,lt)=>`<w:r><w:rPr><w:rFonts w:ascii="${FN(k)}" w:hAnsi="${FN(k)}" w:cs="${FN(k)}"/>${BD(k)||XB?'<w:b/><w:bCs/>':''}<w:sz w:val="${XS||SZ(k)}"/><w:szCs w:val="${XS||SZ(k)}"/>${lt?'':'<w:rtl/>'}</w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`,
+P=(t,jc,k,bd,sp,lt)=>`<w:p><w:pPr>${bd||''}<w:spacing w:after="${sp||80}"/>${lt?'':'<w:bidi/>'}<w:jc w:val="${jc||'left'}"/></w:pPr>${t.split('\n').map((l,i)=>(i?'<w:r><w:br/></w:r>':'')+R(l,k,lt)).join('')}</w:p>`,
+T=(w,cs,lt)=>`<w:tbl><w:tblPr>${lt?'':'<w:bidiVisual/>'}<w:tblW w:w="9500" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${w.map(a=>`<w:gridCol w:w="${a}"/>`).join('')}</w:tblGrid><w:tr>${cs.map((c,i)=>`<w:tc><w:tcPr><w:tcW w:w="${w[i]}" w:type="dxa"/></w:tcPr>${c||'<w:p/>'}</w:tc>`).join('')}</w:tr></w:tbl>`;
+const BX=inn=>`<w:tbl><w:tblPr>${LT?'':'<w:bidiVisual/>'}<w:tblW w:w="9500" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/><w:left w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/><w:bottom w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/><w:right w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="9500"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="9500" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EEF6F3"/></w:tcPr>${inn}</w:tc></w:tr></w:tbl>`,
+DRW=(rid,cx,cy,id)=>`<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="img${id}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="img${id}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`,
+BRD=q=>q==='0'?'':'<w:pBdr><w:bottom w:val="'+(/dotted/.test(q)?'dotted':'single')+'" w:sz="'+(/^2px/.test(q)?12:6)+'" w:space="4" w:color="000000"/></w:pBdr>',SPW=[120,80,40,20][+v('qsp')];
+let b=T([3200,3100,3200],[P(v('school'),'left','H',0,0,LT),P(v('kind')+(v('year')?'\n'+(LT?'Academic year (':'للعام الدراسي (')+v('year')+')':''),'center','H',0,0,LT),P((LT?'Subject : ':'المادة : ')+v('subj')+'\n'+(LT?'Grade : ':'الصف : ')+v('grade')+(v('time')?'\n'+(LT?'Time : ':'الزمن : ')+v('time'):''),'left','H',0,0,LT)],LT)+P('','left','H',BRD(v('hl')),200,LT);
+(BKM?[]:qs).forEach((q,i)=>{const L=q.t.split('\n').filter(s=>s.trim());if(!L.length)return;let j=0;const lt=LT,bk=mode==='b',A=lt?(n=>String(n)):AR;
+b+=T([8000,1500],[P(bk?fr(L[0]):(lt?'Q':'س')+A(i+1)+'/'+fr(L[0]),'left','Q',0,120,lt),q.m&&!bk?P('('+A(q.m)+(lt?' marks)':' درجة)'),'right','Q',0,120,lt):''],lt)+L.slice(1).map(l=>P(/^\s*-/.test(l)?(bk?'• ':A(++j)+'- ')+fr(l.replace(/^\s*-\s*/,'')):fr(l),'left','Q',0,60,lt)).join('')+P('','left','Q',BRD(v('ql')),SPW,lt)});
+const IMG=[];
+if(BKM)bl.forEach(bk=>{const L=(bk.t||'').split('\n').filter(s=>s.trim()),lt=LT,Pq=(t,sp)=>P(t,'left','Q',0,sp||100,lt);
+if(bk.k==='pb')b+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+else if(bk.k==='h1'||bk.k==='h2'){XB=1;XS=Math.round(SZ('Q')*(bk.k==='h1'?1.45:1.2));b+=P(fr(L.join(' ')),'left','Q',bk.k==='h1'?BRD('1px solid #000'):0,120,lt);XB=0;XS=0}
+else if(bk.k==='tx')b+=L.map(x=>Pq(fr(x))).join('');
+else if(bk.k==='bu'||bk.k==='nu')b+=L.map((x,n)=>Pq((bk.k==='bu'?'• ':(lt?n+1:AR(n+1))+'- ')+fr(x),60)).join('');
+else if(bk.k==='bx'){XB=1;const lab=P((LT?BE:BA)[bk.bt|0],'left','Q',0,40,lt);XB=0;b+=BX(lab+L.map(x=>Pq(fr(x),40)).join(''))+P('','left','Q',0,40,lt)}
+else if(bk.k==='im'&&bk.d){const n=IMG.length+1,cx=Math.round(6032500*(bk.w||80)/100),cy=Math.round(cx*(bk.ih||3)/(bk.iw||4));IMG.push(bk.d);b+=DRW('rIdI'+n,cx,cy,n)+(bk.c?P(bk.c,'center','Q',0,120,lt):'')}});
+b+=T([4750,4750],[v('teachl2')||v('teacher2')?P(v('teachl2')+'\n'+v('teacher2'),'left','T',0,0,LT):'',P(v('teachl')+'\n'+v('teacher'),'right','T',0,0,LT)],LT)+P('','left','W',0,0,LT)+P(v('wish'),'center','W',0,0,LT);
 const H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',z=new JSZip();
-z.file('[Content_Types].xml',H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+z.file('[Content_Types].xml',H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>');
 z.file('_rels/.rels',H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
-z.file('word/document.xml',H+'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="500" w:right="1200" w:bottom="700" w:left="1200" w:header="0" w:footer="0" w:gutter="0"/><w:bidi/></w:sectPr></w:body></w:document>');
-await dl('exam.docx',await z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}))}
+z.file('word/document.xml',H+'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>'+b+'<w:sectPr>'+(BKM&&$('pn').checked?'<w:footerReference w:type="default" r:id="rIdF"/>':'')+'<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="500" w:right="1200" w:bottom="700" w:left="1200" w:header="0" w:footer="300" w:gutter="0"/><w:bidi/></w:sectPr></w:body></w:document>');
+z.file('word/footer1.xml',H+'<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>');
+z.file('word/_rels/document.xml.rels',H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdF" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'+IMG.map((u,n)=>'<Relationship Id="rIdI'+(n+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/img'+(n+1)+'.jpg"/>').join('')+'</Relationships>');
+IMG.forEach((u,n)=>z.file('word/media/img'+(n+1)+'.jpg',u.split(',')[1],{base64:true}));
+await dl((BKM?'malzama':'exam')+'.docx',await z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}))}
 async function run(btn,fn){const t=btn.textContent;btn.disabled=true;btn.textContent='جاري التجهيز...';try{await fn()}catch(e){alert('تعذر التصدير: '+(e.message||e))}btn.disabled=false;btn.textContent=t}
 $('bpdf').onclick=e=>run(e.target,pdf);$('bdoc').onclick=e=>run(e.target,wordDoc);
-load();renderQs();if(window.Android)$('pr').style.display='none';
+$('rst').onclick=()=>{if(!confirm('مسح كل البيانات والأسئلة؟'))return;['school','kind','year','time','subj','grade','teachl','teacher','teachl2','teacher2','wish'].forEach(k=>$(k).value='');qs=[{t:'',m:''}];bl=[{k:'h1',t:''},{k:'tx',t:''}];logo='';renderQs();save()};
+const HX=$('hint').textContent;
+function clearAll(){['school','kind','year','time','subj','grade','teachl','teacher','teachl2','teacher2','wish'].forEach(k=>$(k).value='');['H','Q','W','T'].forEach(k=>{$('ff'+k).selectedIndex=lang==='en'?FO.findIndex(o=>o[1]==='Times New Roman'):0;$('fw'+k).selectedIndex=0;$('fs'+k).value=22});['hl','ql','qsp'].forEach(k=>$(k).selectedIndex=0);$('one').checked=false;qs=[{t:'',m:''}];bl=[{k:'h1',t:''},{k:'tx',t:''}];$('pn').checked=true;logo=''}
+function apply(){const b=mode==='b';$('qtitle').textContent=b?'محتوى الملزمة':'الأسئلة';$('add').style.display=b?'none':'';$('chips').style.display=b?'flex':'none';$('pnl').style.display=b?'':'none';if(b)chips();$('one').parentElement.style.display=b?'none':'';$('hint').textContent=b?'ضيف كتل من الأزرار فوق ورتّبها بالأسهم. بالشرح كل سطر فقرة، وبالنقاط والترقيم كل سطر نقطة. الكسور: اكتب {1/2}.':HX}
+function enter(m,l){mode=m;lang=l;KEY='ex_'+m+'_'+l;clearAll();load();apply();renderQs();$('start').style.display='none';tab(1)}
+const home=()=>{$('start').style.display='flex';$('s2').style.display='none';$('s1').style.display='flex';$('sh').textContent='شنو تريد تسوي؟'};
+document.querySelectorAll('#s1 .big').forEach(b=>b.onclick=()=>{pm=b.dataset.m;$('s1').style.display='none';$('s2').style.display='flex';$('sh').textContent=pm==='q'?'لغة الأسئلة؟':'لغة الملزمة؟'});
+document.querySelectorAll('#s2 .big').forEach(b=>b.onclick=()=>enter(pm,b.dataset.l));
+$('sb').onclick=home;$('t0').onclick=home;
+renderQs();if(window.Android)$('pr').style.display='none';
 </script>
 </body>
 </html>
