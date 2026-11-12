@@ -2,6 +2,7 @@ package iq.exam.maker
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
@@ -15,10 +16,15 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
     private lateinit var web: WebView
     private var chooser: ValueCallback<Array<Uri>>? = null
+    private val repo = "Ahmadeyad4/exam-maker"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +45,35 @@ class MainActivity : Activity() {
         }
         web.addJavascriptInterface(Bridge(), "Android")
         web.loadUrl("file:///android_asset/index.html")
+        checkUpdate()
+    }
+
+    private fun checkUpdate() {
+        thread {
+            try {
+                val c = URL("https://api.github.com/repos/$repo/releases/latest").openConnection() as HttpURLConnection
+                c.setRequestProperty("User-Agent", "ExamMaker")
+                c.connectTimeout = 8000
+                c.readTimeout = 8000
+                val tag = JSONObject(c.inputStream.bufferedReader().readText()).getString("tag_name")
+                val latest = tag.filter { it.isDigit() }.toLongOrNull() ?: return@thread
+                val cur = packageManager.getPackageInfo(packageName, 0).longVersionCode
+                if (latest > cur) {
+                    runOnUiThread {
+                        AlertDialog.Builder(this)
+                            .setTitle("يوجد تحديث جديد")
+                            .setMessage("تتوفر نسخة أحدث من التطبيق. تريد تحديثه هسه؟")
+                            .setPositiveButton("تحديث") { _, _ ->
+                                startActivity(Intent(Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/$repo/releases/latest/download/app-release.apk")))
+                            }
+                            .setNegativeButton("لاحقاً", null)
+                            .show()
+                    }
+                }
+            } catch (e: Exception) {
+            }
+        }
     }
 
     @Deprecated("Deprecated in Java")
