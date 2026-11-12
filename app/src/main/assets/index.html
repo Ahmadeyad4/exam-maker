@@ -58,7 +58,7 @@ textarea{min-height:84px;resize:vertical}
 <div class="tabs"><button id="t0" style="flex:.35">🏠</button><button id="t1" class="on">✏️ تحرير</button><button id="t2">👁 معاينة</button></div>
 
 <div id="ed">
-<div class="card"><h3>معلومات الورقة</h3>
+<div class="card" id="cinfo"><h3>معلومات الورقة</h3>
 <div class="grid">
 <div style="grid-column:1/3"><label>اسم المدرسة (يمين الورقة)</label><input id="school"></div>
 <div style="grid-column:1/3"><label>عنوان الامتحان (وسط الورقة)</label><input id="kind"></div>
@@ -76,7 +76,7 @@ textarea{min-height:84px;resize:vertical}
 </div>
 
 <div class="card"><h3>الخطوط</h3><div id="fonts"></div></div>
-<div class="card"><h3>الخطوط الفاصلة والمسافات</h3><div class="grid">
+<div class="card" id="csep"><h3>الخطوط الفاصلة والمسافات</h3><div class="grid">
 <div><label>الخط تحت الترويسة</label><select id="hl"><option value="1px solid #000">عادي</option><option value="2px solid #000">سميك</option><option value="1px dotted #000">منقط</option><option value="0">بدون</option></select></div>
 <div><label>الخطوط بين الأسئلة</label><select id="ql"><option value="1px solid #000">عادية</option><option value="2px solid #000">سميكة</option><option value="1px dotted #000">منقطة</option><option value="0">بدون</option></select></div>
 <div style="grid-column:1/3"><label>المسافة بين الأسئلة (قلّلها إذا الأسئلة كثيرة)</label><select id="qsp"><option value="0">واسعة</option><option value="1">متوسطة</option><option value="2">ضيقة</option><option value="3">ملاصقة</option></select></div>
@@ -97,7 +97,7 @@ textarea{min-height:84px;resize:vertical}
 <script>
 const $=id=>document.getElementById(id);
 const FO=[["'Noto Naskh Arabic',serif",'نسخ'],["'Amiri',serif",'أميري'],["'Scheherazade New',serif",'شهرزاد'],["'Cairo',sans-serif",'القاهرة'],["'Tajawal',sans-serif",'تجوال'],["'Almarai',sans-serif",'المراعي'],['Tahoma,sans-serif','Tahoma'],["'Times New Roman',serif",'Times New Roman'],['Arial,sans-serif','Arial']],WO=[['400','عادي'],['500','متوسط'],['600','عريض'],['700','سميك']];
-[['H','الترويسة (المدرسة، العنوان، السنة، المادة، الصف، الوقت)'],['Q','الأسئلة'],['W','عبارة نهاية الأسئلة'],['T','صفة المعلم واسمه']].forEach(a=>{const d=document.createElement('div');d.style.marginBottom='10px';
+[['H','الترويسة (المدرسة، العنوان، السنة، المادة، الصف، الوقت)'],['Q','الأسئلة'],['W','عبارة نهاية الأسئلة'],['T','صفة المعلم واسمه']].forEach(a=>{const d=document.createElement('div');d.id='fr'+a[0];d.style.marginBottom='10px';
 d.innerHTML='<label><b>'+a[1]+'</b> <span class="hint">(النوع · القوة · الحجم)</span></label><div class="grid" style="grid-template-columns:1.5fr 1fr .8fr"><select id="ff'+a[0]+'">'+FO.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select><select id="fw'+a[0]+'">'+WO.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select><input type="number" id="fs'+a[0]+'" value="22" min="8" max="48" title="الحجم"></div>';$('fonts').appendChild(d)});
 const F=['school','subj','grade','time','teacher','kind','year','teachl','wish','teachl2','teacher2','ffH','fwH','ffQ','fwQ','ffW','fwW','ffT','fwT','fsH','fsQ','fsW','fsT','hl','ql','qsp'];
 let qs=[{t:'',m:''}],logo='',mode='q',lang='ar',KEY='ex_q_ar',pm='q',bl=[];
@@ -131,7 +131,7 @@ $('qs').appendChild(d)})}
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const fmt=s=>esc(s).replace(/\{([^{}\/]+)\/([^{}]+)\}/g,'<span class="fr"><i>$1</i><i>$2</i></span>');
 function build(){const EN=lang==='en',BK=mode==='b',QP=['6px 0 18px','5px 0 10px','3px 0 5px','1px 0 2px'],HP=['padding-bottom:20px;margin-bottom:22px','padding-bottom:14px;margin-bottom:14px','padding-bottom:8px;margin-bottom:8px','padding-bottom:4px;margin-bottom:4px'],qi=+$('qsp').value,S=k=>'font-family:'+$('ff'+k).value+';font-weight:'+$('fw'+k).value+';font-size:'+((+$('fs'+k).value||22)/22)+'em',v=k=>esc($(k).value),ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
-let h='<div class="hd" style="'+S('H')+';border-bottom:'+$('hl').value+';'+HP[qi]+'"><div class="r">'+v('school')+'</div><div class="c">'+(logo?'<img src="'+logo+'"><br>':'')+v('kind')+'<br>'+($('year').value?(EN?'Academic year (':'للعام الدراسي (')+v('year')+')':'')+'</div><div class="l">'+(EN?'Subject : ':'المادة : ')+v('subj')+'<br>'+(EN?'Grade : ':'الصف : ')+v('grade')+($('time').value?'<br>'+(EN?'Time : ':'الزمن : ')+v('time'):'')+'</div></div>';
+let h=BK?'':'<div class="hd" style="'+S('H')+';border-bottom:'+$('hl').value+';'+HP[qi]+'"><div class="r">'+v('school')+'</div><div class="c">'+(logo?'<img src="'+logo+'"><br>':'')+v('kind')+'<br>'+($('year').value?(EN?'Academic year (':'للعام الدراسي (')+v('year')+')':'')+'</div><div class="l">'+(EN?'Subject : ':'المادة : ')+v('subj')+'<br>'+(EN?'Grade : ':'الصف : ')+v('grade')+($('time').value?'<br>'+(EN?'Time : ':'الزمن : ')+v('time'):'')+'</div></div>';
 (BK?[]:qs).forEach((q,i)=>{const L=q.t.split('\n').filter(x=>x.trim());if(!L.length)return;let j=0;
 const en=EN,ar2=en?(x=>String(x)):ar;h+='<div class="qt'+(en?' en':'')+'"'+(en?' dir="ltr"':'')+' style="'+S('Q')+';border-bottom:'+$('ql').value+';padding:'+QP[qi]+'"><div class="qh2"><span>'+(BK?'<b>'+fmt(L[0])+'</b>':(en?'Q':'س')+ar2(i+1)+'/'+fmt(L[0]))+'</span>'+(q.m&&!BK?'<span class="mk">('+ar2(q.m)+(en?' marks':' درجة')+')</span>':'')+'</div>';
 L.slice(1).forEach(l=>{h+='<div class="it">'+(/^\s*-/.test(l)?(BK?'• ':ar2(++j)+'- ')+fmt(l.replace(/^\s*-\s*/,'')):fmt(l))+'</div>'});h+='</div>'});
@@ -142,7 +142,7 @@ else if(b.k==='tx')h+=Wb('b-tx',L.map(x=>'<div>'+F(x)+'</div>').join(''));
 else if(b.k==='bu'||b.k==='nu')h+=Wb('b-tx',L.map((x,n)=>'<div class="it">'+(b.k==='bu'?'• ':(EN?n+1:ar(n+1))+'- ')+F(x)+'</div>').join(''));
 else if(b.k==='bx')h+=Wb('b-bx','<div class="bl">'+(EN?BE:BA)[b.bt|0]+'</div>'+L.map(x=>'<div>'+F(x)+'</div>').join(''));
 else if(b.k==='im'&&b.d)h+=Wb('b-im','<img src="'+b.d+'" style="width:'+(b.w||80)+'%">'+(b.c?'<div class="cap">'+esc(b.c)+'</div>':''))});
-h+='<div class="ft"><div class="tc\" style="'+S('T')+'">'+(v('teachl2')||v('teacher2')?v('teachl2')+'<br>'+v('teacher2'):'')+'</div><div class="wish" style="'+S('W')+'">'+v('wish')+'</div><div class="tc" style="'+S('T')+'">'+v('teachl')+'<br>'+v('teacher')+'</div></div>';
+if(!BK)h+='<div class="ft"><div class="tc" style="'+S('T')+'">'+(v('teachl2')||v('teacher2')?v('teachl2')+'<br>'+v('teacher2'):'')+'</div><div class="wish" style="'+S('W')+'">'+v('wish')+'</div><div class="tc" style="'+S('T')+'">'+v('teachl')+'<br>'+v('teacher')+'</div></div>';
 const p=$('paper');p.innerHTML=h;p.dir=EN?'ltr':'rtl';p.className=$('one').checked&&!BK?'one':'';p.style.fontSize='22px';
 if($('one').checked&&!BK){let s=22;while(p.scrollHeight>p.clientHeight+1&&s>7){s-=.5;p.style.fontSize=s+'px'}}
 fit()}
@@ -184,7 +184,7 @@ T=(w,cs,lt)=>`<w:tbl><w:tblPr>${lt?'':'<w:bidiVisual/>'}<w:tblW w:w="9500" w:typ
 const BX=inn=>`<w:tbl><w:tblPr>${LT?'':'<w:bidiVisual/>'}<w:tblW w:w="9500" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/><w:left w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/><w:bottom w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/><w:right w:val="single" w:sz="8" w:space="0" w:color="0F6E5C"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="9500"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="9500" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EEF6F3"/></w:tcPr>${inn}</w:tc></w:tr></w:tbl>`,
 DRW=(rid,cx,cy,id)=>`<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="img${id}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="img${id}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`,
 BRD=q=>q==='0'?'':'<w:pBdr><w:bottom w:val="'+(/dotted/.test(q)?'dotted':'single')+'" w:sz="'+(/^2px/.test(q)?12:6)+'" w:space="4" w:color="000000"/></w:pBdr>',SPW=[120,80,40,20][+v('qsp')];
-let b=T([3200,3100,3200],[P(v('school'),'left','H',0,0,LT),P(v('kind')+(v('year')?'\n'+(LT?'Academic year (':'للعام الدراسي (')+v('year')+')':''),'center','H',0,0,LT),P((LT?'Subject : ':'المادة : ')+v('subj')+'\n'+(LT?'Grade : ':'الصف : ')+v('grade')+(v('time')?'\n'+(LT?'Time : ':'الزمن : ')+v('time'):''),'left','H',0,0,LT)],LT)+P('','left','H',BRD(v('hl')),200,LT);
+let b=BKM?'':T([3200,3100,3200],[P(v('school'),'left','H',0,0,LT),P(v('kind')+(v('year')?'\n'+(LT?'Academic year (':'للعام الدراسي (')+v('year')+')':''),'center','H',0,0,LT),P((LT?'Subject : ':'المادة : ')+v('subj')+'\n'+(LT?'Grade : ':'الصف : ')+v('grade')+(v('time')?'\n'+(LT?'Time : ':'الزمن : ')+v('time'):''),'left','H',0,0,LT)],LT)+P('','left','H',BRD(v('hl')),200,LT);
 (BKM?[]:qs).forEach((q,i)=>{const L=q.t.split('\n').filter(s=>s.trim());if(!L.length)return;let j=0;const lt=LT,bk=mode==='b',A=lt?(n=>String(n)):AR;
 b+=T([8000,1500],[P(bk?fr(L[0]):(lt?'Q':'س')+A(i+1)+'/'+fr(L[0]),'left','Q',0,120,lt),q.m&&!bk?P('('+A(q.m)+(lt?' marks)':' درجة)'),'right','Q',0,120,lt):''],lt)+L.slice(1).map(l=>P(/^\s*-/.test(l)?(bk?'• ':A(++j)+'- ')+fr(l.replace(/^\s*-\s*/,'')):fr(l),'left','Q',0,60,lt)).join('')+P('','left','Q',BRD(v('ql')),SPW,lt)});
 const IMG=[];
@@ -195,7 +195,7 @@ else if(bk.k==='tx')b+=L.map(x=>Pq(fr(x))).join('');
 else if(bk.k==='bu'||bk.k==='nu')b+=L.map((x,n)=>Pq((bk.k==='bu'?'• ':(lt?n+1:AR(n+1))+'- ')+fr(x),60)).join('');
 else if(bk.k==='bx'){XB=1;const lab=P((LT?BE:BA)[bk.bt|0],'left','Q',0,40,lt);XB=0;b+=BX(lab+L.map(x=>Pq(fr(x),40)).join(''))+P('','left','Q',0,40,lt)}
 else if(bk.k==='im'&&bk.d){const n=IMG.length+1,cx=Math.round(6032500*(bk.w||80)/100),cy=Math.round(cx*(bk.ih||3)/(bk.iw||4));IMG.push(bk.d);b+=DRW('rIdI'+n,cx,cy,n)+(bk.c?P(bk.c,'center','Q',0,120,lt):'')}});
-b+=T([4750,4750],[v('teachl2')||v('teacher2')?P(v('teachl2')+'\n'+v('teacher2'),'left','T',0,0,LT):'',P(v('teachl')+'\n'+v('teacher'),'right','T',0,0,LT)],LT)+P('','left','W',0,0,LT)+P(v('wish'),'center','W',0,0,LT);
+if(!BKM)b+=T([4750,4750],[v('teachl2')||v('teacher2')?P(v('teachl2')+'\n'+v('teacher2'),'left','T',0,0,LT):'',P(v('teachl')+'\n'+v('teacher'),'right','T',0,0,LT)],LT)+P('','left','W',0,0,LT)+P(v('wish'),'center','W',0,0,LT);
 const H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',z=new JSZip();
 z.file('[Content_Types].xml',H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>');
 z.file('_rels/.rels',H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
@@ -209,7 +209,7 @@ $('bpdf').onclick=e=>run(e.target,pdf);$('bdoc').onclick=e=>run(e.target,wordDoc
 $('rst').onclick=()=>{if(!confirm('مسح كل البيانات والأسئلة؟'))return;['school','kind','year','time','subj','grade','teachl','teacher','teachl2','teacher2','wish'].forEach(k=>$(k).value='');qs=[{t:'',m:''}];bl=[{k:'h1',t:''},{k:'tx',t:''}];logo='';renderQs();save()};
 const HX=$('hint').textContent;
 function clearAll(){['school','kind','year','time','subj','grade','teachl','teacher','teachl2','teacher2','wish'].forEach(k=>$(k).value='');['H','Q','W','T'].forEach(k=>{$('ff'+k).selectedIndex=lang==='en'?FO.findIndex(o=>o[1]==='Times New Roman'):0;$('fw'+k).selectedIndex=0;$('fs'+k).value=22});['hl','ql','qsp'].forEach(k=>$(k).selectedIndex=0);$('one').checked=false;qs=[{t:'',m:''}];bl=[{k:'h1',t:''},{k:'tx',t:''}];$('pn').checked=true;logo=''}
-function apply(){const b=mode==='b';$('qtitle').textContent=b?'محتوى الملزمة':'الأسئلة';$('add').style.display=b?'none':'';$('chips').style.display=b?'flex':'none';$('pnl').style.display=b?'':'none';if(b)chips();$('one').parentElement.style.display=b?'none':'';$('hint').textContent=b?'ضيف كتل من الأزرار فوق ورتّبها بالأسهم. بالشرح كل سطر فقرة، وبالنقاط والترقيم كل سطر نقطة. الكسور: اكتب {1/2}.':HX}
+function apply(){const b=mode==='b';$('qtitle').textContent=b?'محتوى الملزمة':'الأسئلة';$('add').style.display=b?'none':'';$('chips').style.display=b?'flex':'none';$('pnl').style.display=b?'':'none';$('cinfo').style.display=b?'none':'';$('csep').style.display=b?'none':'';['H','W','T'].forEach(k=>$('fr'+k).style.display=b?'none':'');$('frQ').querySelector('b').textContent=b?'خط المحتوى':'الأسئلة';if(b)chips();$('one').parentElement.style.display=b?'none':'';$('hint').textContent=b?'ضيف كتل من الأزرار فوق ورتّبها بالأسهم. بالشرح كل سطر فقرة، وبالنقاط والترقيم كل سطر نقطة. الكسور: اكتب {1/2}.':HX}
 function enter(m,l){mode=m;lang=l;KEY='ex_'+m+'_'+l;clearAll();load();apply();renderQs();$('start').style.display='none';tab(1)}
 const home=()=>{$('start').style.display='flex';$('s2').style.display='none';$('s1').style.display='flex';$('sh').textContent='شنو تريد تسوي؟'};
 document.querySelectorAll('#s1 .big').forEach(b=>b.onclick=()=>{pm=b.dataset.m;$('s1').style.display='none';$('s2').style.display='flex';$('sh').textContent=pm==='q'?'لغة الأسئلة؟':'لغة الملزمة؟'});
