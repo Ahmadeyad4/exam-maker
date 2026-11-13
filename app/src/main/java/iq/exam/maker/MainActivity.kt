@@ -38,7 +38,8 @@ class MainActivity : Activity() {
             override fun onShowFileChooser(w: WebView?, cb: ValueCallback<Array<Uri>>?, p: FileChooserParams?): Boolean {
                 chooser?.onReceiveValue(null)
                 chooser = cb
-                val i = Intent(Intent.ACTION_GET_CONTENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "image/*" }
+                val want = p?.acceptTypes?.joinToString(",") ?: ""
+                val i = Intent(Intent.ACTION_GET_CONTENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = if (want.contains("image")) "image/*" else "*/*" }
                 startActivityForResult(i, 1)
                 return true
             }
@@ -92,8 +93,11 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun save(name: String, b64: String) {
             val bytes = Base64.decode(b64, Base64.DEFAULT)
-            val mime = if (name.endsWith(".pdf")) "application/pdf"
-                else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            val mime = when {
+                name.endsWith(".pdf") -> "application/pdf"
+                name.endsWith(".json") -> "application/json"
+                else -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }
             runOnUiThread {
                 try {
                     val v = ContentValues().apply {
@@ -104,10 +108,12 @@ class MainActivity : Activity() {
                     val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v)!!
                     contentResolver.openOutputStream(uri)!!.use { it.write(bytes) }
                     Toast.makeText(this@MainActivity, "تم الحفظ في مجلد التنزيلات: $name", Toast.LENGTH_LONG).show()
-                    try {
-                        startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "فتح الملف"))
-                    } catch (e: Exception) { }
+                    if (!name.endsWith(".json")) {
+                        try {
+                            startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
+                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "فتح الملف"))
+                        } catch (e: Exception) { }
+                    }
                 } catch (e: Exception) {
                     Toast.makeText(this@MainActivity, "تعذر الحفظ", Toast.LENGTH_LONG).show()
                 }
