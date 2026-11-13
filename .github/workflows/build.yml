@@ -14,6 +14,34 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Bundle libs and fonts for offline use
+        continue-on-error: true
+        run: |
+          python3 - <<'PYEOF'
+          import re, os, hashlib, urllib.request
+          A = 'app/src/main/assets'
+          os.makedirs(A + '/libs', exist_ok=True)
+          os.makedirs(A + '/fonts', exist_ok=True)
+          UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
+          def get(u):
+              return urllib.request.urlopen(urllib.request.Request(u, headers={'User-Agent': UA}), timeout=60).read()
+          h = open(A + '/index.html', encoding='utf-8').read()
+          for u in sorted(set(re.findall(r'src="(https://cdnjs[^"]+)"', h))):
+              n = u.split('/')[-1]
+              open(A + '/libs/' + n, 'wb').write(get(u))
+              h = h.replace(u, 'libs/' + n)
+          m = re.search(r'<link href="(https://fonts\.googleapis\.com[^"]+)" rel="stylesheet">', h)
+          if m:
+              css = get(m.group(1)).decode('utf-8')
+              for u in sorted(set(re.findall(r'url\((https://fonts\.gstatic\.com[^)]+)\)', css))):
+                  n = hashlib.md5(u.encode()).hexdigest()[:12] + '.woff2'
+                  open(A + '/fonts/' + n, 'wb').write(get(u))
+                  css = css.replace(u, 'fonts/' + n)
+              open(A + '/fonts.css', 'w', encoding='utf-8').write(css)
+              h = h.replace(m.group(0), '<link href="fonts.css" rel="stylesheet">')
+          open(A + '/index.html', 'w', encoding='utf-8').write(h)
+          print('bundled ok')
+          PYEOF
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.7
