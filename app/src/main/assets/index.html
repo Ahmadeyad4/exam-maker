@@ -324,9 +324,9 @@
                 </div>
 
                 <div class="flex items-center gap-1.5 sm:gap-2">
-                    <div class="hidden md:flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200">
+                    <div class="flex items-center bg-slate-100 rounded-xl p-0.5 sm:p-1 border border-slate-200">
                         <button onclick="changeZoom(-0.1)" class="w-7 h-7 rounded-lg hover:bg-white text-slate-600 flex items-center justify-center"><i class="fa-solid fa-minus text-xs"></i></button>
-                        <span id="zoom-label" class="text-xs font-bold text-slate-700 px-2">88%</span>
+                        <span id="zoom-label" onclick="fitZoom()" title="ملاءمة الشاشة" class="text-xs font-bold text-slate-700 px-1.5 sm:px-2 cursor-pointer select-none">100%</span>
                         <button onclick="changeZoom(0.1)" class="w-7 h-7 rounded-lg hover:bg-white text-slate-600 flex items-center justify-center"><i class="fa-solid fa-plus text-xs"></i></button>
                     </div>
                     <button onclick="exportAndPrintPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition active:scale-95">
@@ -664,6 +664,7 @@
             document.getElementById('project-title-input').value = currentProject.title;
             currentLessonPageIndex = 0;
             switchMode('cover');
+            fitZoom();
         }
 
         function exitToHome() {
@@ -696,11 +697,33 @@
             }
         }
 
-        function changeZoom(delta) {
-            currentZoom = Math.min(1.4, Math.max(0.4, +(currentZoom + delta).toFixed(2)));
-            document.getElementById('a4-cover-paper').style.transform = `scale(${currentZoom})`;
-            document.getElementById('a4-lesson-paper').style.transform = `scale(${currentZoom})`;
+        let userZoomed = false;
+        function applyZoom() {
+            ['a4-cover-paper', 'a4-lesson-paper'].forEach(id => {
+                const el = document.getElementById(id);
+                el.style.transform = '';
+                el.style.zoom = currentZoom;
+            });
             document.getElementById('zoom-label').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        function fitZoom() {
+            const vp = document.getElementById('canvas-viewport');
+            if (!vp || !vp.clientWidth) return;
+            const pad = parseFloat(getComputedStyle(vp).paddingLeft) || 0;
+            currentZoom = Math.min(1, Math.max(0.2, +((vp.clientWidth - 2 * pad) / 794).toFixed(3)));
+            userZoomed = false;
+            applyZoom();
+        }
+        function changeZoom(delta) {
+            userZoomed = true;
+            currentZoom = Math.min(1.6, Math.max(0.2, +(currentZoom + delta).toFixed(2)));
+            applyZoom();
+        }
+        window.addEventListener('resize', () => { if (!userZoomed) fitZoom(); });
+        function paperHeight(paper) {
+            const z = paper.style.zoom; paper.style.zoom = 1;
+            const h = paper.scrollHeight; paper.style.zoom = z;
+            return h;
         }
 
         function renderCoverCanvas() {
@@ -894,15 +917,15 @@
         function checkA4PageOverflow() {
             if (currentMode !== 'lessons') return;
             const paper = document.getElementById('a4-lesson-paper');
-            document.getElementById('a4-red-limit-line').classList.toggle('hidden', paper.scrollHeight <= 1095);
-            document.getElementById('overflow-alert-bar').classList.toggle('hidden', paper.scrollHeight <= 1095);
+            document.getElementById('a4-red-limit-line').classList.toggle('hidden', paperHeight(paper) <= 1095);
+            document.getElementById('overflow-alert-bar').classList.toggle('hidden', paperHeight(paper) <= 1095);
         }
 
         function moveOverflowToNewPage() {
             const paper = document.getElementById('a4-lesson-paper');
             const page = currentProject.pages[currentLessonPageIndex];
             const moved = [];
-            while (page.blocks.length > 1 && paper.scrollHeight > 1095) {
+            while (page.blocks.length > 1 && paperHeight(paper) > 1095) {
                 moved.unshift(page.blocks.pop());
                 renderCurrentLessonPage();
             }
