@@ -48,6 +48,20 @@
             background: #64748b;
         }
 
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        #canvas-viewport { touch-action: pan-x pan-y; }
+        .ci-handle { display: none; position: absolute; width: 30px; height: 30px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 15px; line-height: 1; align-items: center; justify-content: center; touch-action: none; cursor: pointer; z-index: 5; box-shadow: 0 1px 4px rgba(0,0,0,.35); user-select: none; }
+        .cover-item.selected .ci-handle { display: flex; }
+        .ci-move { top: -15px; left: -15px; } .ci-rotate { top: -15px; right: -15px; } .ci-resize { bottom: -15px; right: -15px; }
+        body.dock-side #lessons-bottom-bar, body.dock-side #cover-bottom-bar {
+            position: fixed; top: var(--rail-top, 0px); right: 0; bottom: 0; width: 84px;
+            border-top: 0; border-left: 1px solid #e2e8f0; overflow-y: auto; z-index: 35;
+        }
+        body.dock-side #lessons-bottom-bar > div, body.dock-side #cover-bottom-bar > div {
+            flex-direction: column; justify-content: flex-start; gap: 6px; max-width: none; overflow: visible;
+        }
+        body.dock-side #canvas-viewport, body.dock-side #lesson-floating-format-bar { margin-right: 84px; }
+
         /* A4 Paper Dimensions & Styling */
         .a4-paper {
             width: var(--a4-width);
@@ -142,6 +156,7 @@
         }
 
         /* Editable Content Styling */
+        [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-user-modify: read-write; }
         [contenteditable="true"]:focus {
             outline: 2px dashed #3b82f6;
             outline-offset: 2px;
@@ -263,6 +278,12 @@
         </header>
 
         <main class="max-w-6xl w-full mx-auto px-4 py-6 sm:py-8 flex-1">
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="exportBackup()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 text-sm"><i class="fa-solid fa-file-export text-emerald-600"></i><span>نسخة احتياطية (تصدير)</span></button>
+                <button onclick="importBackup()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 text-sm"><i class="fa-solid fa-file-import text-indigo-600"></i><span>استيراد مشاريع</span></button>
+                <input type="file" id="img-file-input" accept="image/*" class="hidden" onchange="onImagePicked(this)">
+                <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" onchange="readImportFile(this)">
+            </div>
             <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-3.5">
                     <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
@@ -324,6 +345,9 @@
                 </div>
 
                 <div class="flex items-center gap-1.5 sm:gap-2">
+                    <button id="undo-btn" onclick="undo()" title="تراجع" class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center opacity-40"><i class="fa-solid fa-rotate-left text-sm"></i></button>
+                    <button id="redo-btn" onclick="redo()" title="إعادة" class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center opacity-40"><i class="fa-solid fa-rotate-right text-sm"></i></button>
+                    <button onclick="toggleDock()" title="مكان الأدوات: جانب / أسفل" class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center"><i class="fa-solid fa-table-columns text-sm"></i></button>
                     <div class="flex items-center bg-slate-100 rounded-xl p-0.5 sm:p-1 border border-slate-200">
                         <button onclick="changeZoom(-0.1)" class="w-7 h-7 rounded-lg hover:bg-white text-slate-600 flex items-center justify-center"><i class="fa-solid fa-minus text-xs"></i></button>
                         <span id="zoom-label" onclick="fitZoom()" title="ملاءمة الشاشة" class="text-xs font-bold text-slate-700 px-1.5 sm:px-2 cursor-pointer select-none">100%</span>
@@ -451,6 +475,15 @@
                         <button onmousedown="event.preventDefault(); toggleActiveLessonBlockProp('bold')" class="px-2.5 py-1 hover:bg-indigo-800 font-black" title="عريض">B</button>
                         <button onmousedown="event.preventDefault(); toggleActiveLessonBlockProp('italic')" class="px-2.5 py-1 hover:bg-indigo-800 italic border-x border-indigo-800" title="مائل">I</button>
                         <button onmousedown="event.preventDefault(); toggleActiveLessonBlockProp('underline')" class="px-2.5 py-1 hover:bg-indigo-800 underline" title="تحته خط">U</button>
+                        <button onmousedown="event.preventDefault(); formatScript('superscript')" class="px-2 py-1 hover:bg-indigo-800 border-s border-indigo-800" title="أُس (حدد كلمات)">x<sup>2</sup></button>
+                        <button onmousedown="event.preventDefault(); formatScript('subscript')" class="px-2 py-1 hover:bg-indigo-800 " title="حدّ سفلي (حدد كلمات)">x<sub>2</sub></button>
+                        <button onmousedown="event.preventDefault(); clearActiveFormat()" class="px-2 py-1 hover:bg-indigo-800 border-s border-indigo-800" title="مسح التنسيق"><i class="fa-solid fa-eraser"></i></button>
+                        <button onmousedown="event.preventDefault(); adjustSpacing('lh', 0.2)" class="px-2 py-1 hover:bg-indigo-800 border-s border-indigo-800" title="زيادة تباعد الأسطر">↕+</button>
+                        <button onmousedown="event.preventDefault(); adjustSpacing('lh', -0.2)" class="px-2 py-1 hover:bg-indigo-800 " title="تقليل تباعد الأسطر">↕−</button>
+                        <button onmousedown="event.preventDefault(); adjustSpacing('mt', 8)" class="px-2 py-1 hover:bg-indigo-800 border-s border-indigo-800" title="زيادة المسافة قبل الفقرة">¶+</button>
+                        <button onmousedown="event.preventDefault(); adjustSpacing('mt', -8)" class="px-2 py-1 hover:bg-indigo-800 " title="تقليل المسافة قبل الفقرة">¶−</button>
+                        <button onmousedown="event.preventDefault(); toggleBlockDir()" class="px-2 py-1 hover:bg-indigo-800 border-s border-indigo-800" title="اتجاه النص: عربي / إنجليزي">⇄</button>
+                        <span class="inline-flex items-center gap-1 px-2 border-s border-indigo-800" title="لون خلفية البلوك"><button onmousedown="event.preventDefault(); setBlockBg('#fef9c3')" class="w-5 h-5 rounded-full border border-white/60" style="background:#fef9c3"></button><button onmousedown="event.preventDefault(); setBlockBg('#dcfce7')" class="w-5 h-5 rounded-full border border-white/60" style="background:#dcfce7"></button><button onmousedown="event.preventDefault(); setBlockBg('#dbeafe')" class="w-5 h-5 rounded-full border border-white/60" style="background:#dbeafe"></button><button onmousedown="event.preventDefault(); setBlockBg('#fce7f3')" class="w-5 h-5 rounded-full border border-white/60" style="background:#fce7f3"></button><button onmousedown="event.preventDefault(); setBlockBg('#e5e7eb')" class="w-5 h-5 rounded-full border border-white/60" style="background:#e5e7eb"></button><button onmousedown="event.preventDefault(); setBlockBg(null)" class="w-5 h-5 rounded-full border border-white/60 text-[10px] leading-none text-white">✕</button></span>
                     </div>
 
                     <div class="flex items-center bg-slate-900 border border-indigo-700 rounded-lg overflow-hidden">
@@ -500,11 +533,11 @@
             <div class="max-w-4xl mx-auto flex items-center justify-around sm:justify-center sm:gap-4">
                 <button onclick="openCoverDrawer('text')" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-indigo-50 text-slate-700 transition">
                     <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-base"><i class="fa-solid fa-font"></i></div>
-                    <span class="text-[11px] font-bold">الخطوط</span>
+                    <span class="text-[11px] font-bold">نص وصور</span>
                 </button>
                 <button onclick="openCoverDrawer('frames')" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-teal-50 text-slate-700 transition">
                     <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-base"><i class="fa-regular fa-square"></i></div>
-                    <span class="text-[11px] font-bold">الإطارات</span>
+                    <span class="text-[11px] font-bold">إطارات وقوالب</span>
                 </button>
                 <button onclick="switchMode('lessons')" class="flex flex-col items-center gap-1 p-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition">
                     <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-base"><i class="fa-solid fa-arrow-left"></i></div>
@@ -525,8 +558,8 @@
                     <span class="text-[11px] font-bold">القواعد</span>
                 </button>
                 <button onclick="openLessonDrawer('media')" class="flex flex-col items-center gap-1 p-1.5 sm:p-2 rounded-xl hover:bg-rose-50 text-slate-700 transition">
-                    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base"><i class="fa-solid fa-qrcode"></i></div>
-                    <span class="text-[11px] font-bold">صورة / QR</span>
+                    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base"><i class="fa-solid fa-images"></i></div>
+                    <span class="text-[11px] font-bold">صور وقوالب</span>
                 </button>
             </div>
         </div>
@@ -594,8 +627,57 @@
                 const idx = projects.findIndex(p => p.id === currentProject.id);
                 if (idx !== -1) projects[idx] = currentProject;
             }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); }
+            catch (e) { showToast('مساحة التخزين ممتلئة، صدّر نسخة احتياطية واحذف صوراً كبيرة', 'error'); }
+            recordHistory();
         }
+
+        // ===== Undo / Redo =====
+        let hist = [], histIdx = -1, histApplying = false, histLastT = 0;
+        function resetHistory() {
+            hist = [JSON.stringify(currentProject)]; histIdx = 0; histLastT = 0; updateUndoButtons();
+        }
+        function recordHistory() {
+            if (histApplying || !currentProject || document.getElementById('editor-view').classList.contains('hidden')) return;
+            const snap = JSON.stringify(currentProject, (k, v) => k === 'updatedAt' ? undefined : v);
+            const cur = hist[histIdx] !== undefined ? JSON.stringify(JSON.parse(hist[histIdx]), (k, v) => k === 'updatedAt' ? undefined : v) : null;
+            if (snap === cur) return;
+            const full = JSON.stringify(currentProject), now = Date.now();
+            hist = hist.slice(0, histIdx + 1);
+            if (histIdx > 0 && now - histLastT < 700) hist[histIdx] = full;   // دمج الكتابة المتتابعة
+            else { hist.push(full); histIdx = hist.length - 1; }
+            if (hist.length > 60) { hist.shift(); histIdx = hist.length - 1; }
+            histLastT = now; updateUndoButtons();
+        }
+        function updateUndoButtons() {
+            const u = document.getElementById('undo-btn'), r = document.getElementById('redo-btn');
+            if (!u || !r) return;
+            u.disabled = histIdx <= 0; r.disabled = histIdx >= hist.length - 1;
+            u.classList.toggle('opacity-40', u.disabled); r.classList.toggle('opacity-40', r.disabled);
+        }
+        function stepHistory(dir) {
+            const t = histIdx + dir;
+            if (t < 0 || t >= hist.length) return;
+            histIdx = t; histLastT = 0; histApplying = true;
+            try {
+                const i = projects.findIndex(p => p.id === currentProject.id);
+                currentProject = JSON.parse(hist[t]);
+                if (i !== -1) projects[i] = currentProject;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+                currentLessonPageIndex = Math.min(currentLessonPageIndex, currentProject.pages.length - 1);
+                if (!currentProject.cover.items.some(x => x.id === selectedCoverItemId)) selectedCoverItemId = null;
+                deselectActiveLessonBlock();
+                document.getElementById('project-title-input').value = currentProject.title;
+                if (currentMode === 'cover') renderCoverCanvas(); else { renderLessonsPagesStrip(); renderCurrentLessonPage(); }
+            } catch (e) { console.error(e); }
+            histApplying = false; updateUndoButtons();
+        }
+        const undo = () => stepHistory(-1), redo = () => stepHistory(1);
+        document.addEventListener('keydown', e => {
+            if (!(e.ctrlKey || e.metaKey) || e.target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+            if (e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+            else if (e.key === 'y') { e.preventDefault(); redo(); }
+        });
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -618,6 +700,41 @@
             const close = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
             document.getElementById('modal-cancel').onclick = close;
             confirmBtn.onclick = () => { if (onConfirm) onConfirm(); close(); };
+        }
+
+        function exportBackup() {
+            if (!projects.length) { showToast('لا توجد مشاريع لتصديرها', 'error'); return; }
+            const data = JSON.stringify({ app: 'malzama', version: 1, exportedAt: new Date().toISOString(), projects });
+            const name = 'malzama-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+            if (window.AndroidBridge && window.AndroidBridge.saveFile) { window.AndroidBridge.saveFile(name, data); return; }
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+            a.download = name; document.body.appendChild(a); a.click(); a.remove();
+            showToast('تم تصدير النسخة الاحتياطية');
+        }
+        function importBackup() {
+            if (window.AndroidBridge && window.AndroidBridge.pickFile) window.AndroidBridge.pickFile();
+            else document.getElementById('import-file-input').click();
+        }
+        function readImportFile(input) {
+            const f = input.files && input.files[0]; if (!f) return;
+            const r = new FileReader(); r.onload = () => handleImportedText(r.result); r.readAsText(f); input.value = '';
+        }
+        function handleImportedText(text) {
+            try {
+                const d = JSON.parse(text);
+                const list = Array.isArray(d) ? d : (d.projects || (d.cover ? [d] : null));
+                if (!list) throw new Error('bad');
+                let n = 0;
+                list.forEach(pr => {
+                    if (!pr || !pr.cover || !pr.pages) return;
+                    if (!pr.id || projects.some(x => x.id === pr.id)) pr.id = 'proj-' + Date.now() + '-' + n;
+                    projects.push(pr); n++;
+                });
+                if (!n) throw new Error('empty');
+                saveProjectsToStorage(); renderHomeProjects();
+                showToast('تم استيراد ' + n + ' مشروع');
+            } catch (e) { showToast('الملف غير صالح', 'error'); }
         }
 
         function renderHomeProjects() {
@@ -664,7 +781,7 @@
             document.getElementById('project-title-input').value = currentProject.title;
             currentLessonPageIndex = 0;
             switchMode('cover');
-            fitZoom();
+            applyDock(); fitZoom(); resetHistory();
         }
 
         function exitToHome() {
@@ -706,20 +823,61 @@
             });
             document.getElementById('zoom-label').textContent = Math.round(currentZoom * 100) + '%';
         }
+        let lastVpW = 0;
         function fitZoom() {
             const vp = document.getElementById('canvas-viewport');
             if (!vp || !vp.clientWidth) return;
-            const pad = parseFloat(getComputedStyle(vp).paddingLeft) || 0;
-            currentZoom = Math.min(1, Math.max(0.2, +((vp.clientWidth - 2 * pad) / 794).toFixed(3)));
-            userZoomed = false;
-            applyZoom();
+            const cs = getComputedStyle(vp);
+            const w = (vp.clientWidth - 2 * (parseFloat(cs.paddingLeft) || 0)) / 794;
+            const h = (vp.clientHeight - 2 * (parseFloat(cs.paddingTop) || 0)) / 1123;
+            currentZoom = Math.min(1, Math.max(0.2, +Math.min(w, h).toFixed(3)));
+            lastVpW = vp.clientWidth; userZoomed = false; applyZoom();
         }
+        let dock = (function () { try { return localStorage.getItem('dock'); } catch (e) { return null; } })();
+        function applyDock() {
+            const landscape = (screen.orientation && screen.orientation.type) ? screen.orientation.type.startsWith('landscape') : innerWidth > innerHeight;
+            const side = (dock || (landscape ? 'side' : 'bottom')) === 'side';
+            document.body.classList.toggle('dock-side', side);
+            const vp = document.getElementById('canvas-viewport');
+            document.documentElement.style.setProperty('--rail-top', vp.getBoundingClientRect().top + 'px');
+        }
+        function toggleDock() {
+            dock = document.body.classList.contains('dock-side') ? 'bottom' : 'side';
+            try { localStorage.setItem('dock', dock); } catch (e) {}
+            applyDock(); fitZoom();
+        }
+        (function () {
+            const vp = document.getElementById('canvas-viewport');
+            let d0 = 0, z0 = 1, a = null;
+            const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+            vp.addEventListener('touchstart', e => {
+                if (e.touches.length !== 2) return;
+                const r = vp.getBoundingClientRect();
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+                d0 = dist(e.touches); z0 = currentZoom;
+                a = { cx, cy, px: (vp.scrollLeft + cx) / currentZoom, py: (vp.scrollTop + cy) / currentZoom };
+            }, { passive: true });
+            vp.addEventListener('touchmove', e => {
+                if (e.touches.length !== 2 || !d0) return;
+                e.preventDefault(); userZoomed = true;
+                currentZoom = Math.min(2.5, Math.max(0.2, +(z0 * dist(e.touches) / d0).toFixed(3)));
+                applyZoom();
+                vp.scrollLeft = a.px * currentZoom - a.cx; vp.scrollTop = a.py * currentZoom - a.cy;
+            }, { passive: false });
+            vp.addEventListener('touchend', e => { if (e.touches.length < 2) d0 = 0; });
+        })();
         function changeZoom(delta) {
             userZoomed = true;
-            currentZoom = Math.min(1.6, Math.max(0.2, +(currentZoom + delta).toFixed(2)));
+            currentZoom = Math.min(2.5, Math.max(0.2, +(currentZoom + delta).toFixed(2)));
             applyZoom();
         }
-        window.addEventListener('resize', () => { if (!userZoomed) fitZoom(); });
+        let lastInnerW = innerWidth;
+        window.addEventListener('resize', () => {
+            const a = document.activeElement, typing = a && (a.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(a.tagName));
+            const widthSame = innerWidth === lastInnerW; lastInnerW = innerWidth;
+            if (typing && widthSame) return;   // الكيبورد فتح: لا تغيّر التخطيط ولا الزوم
+            if (document.getElementById('editor-view').classList.contains('hidden')) return; applyDock(); const vp = document.getElementById('canvas-viewport'); if (!userZoomed && vp.clientWidth !== lastVpW) fitZoom(); });
         function paperHeight(paper) {
             const z = paper.style.zoom; paper.style.zoom = 1;
             const h = paper.scrollHeight; paper.style.zoom = z;
@@ -728,6 +886,7 @@
 
         function renderCoverCanvas() {
             document.getElementById('cover-bg-layer').style.background = currentProject.cover.bgStyle;
+            document.getElementById('cover-frame-layer').className = currentProject.cover.frame || 'frame-modern';
             const itemsLayer = document.getElementById('cover-elements-layer');
             itemsLayer.innerHTML = '';
             currentProject.cover.items.forEach(item => {
@@ -742,16 +901,165 @@
                     el.innerHTML = `<div contenteditable="true" class="outline-none px-2 py-1">${item.text}</div>`;
                     el.querySelector('div').oninput = (e) => { item.text = e.target.innerText; saveProjectsToStorage(); };
                 }
+                else if (item.type === 'image') {
+                    el.innerHTML = `<img src="${item.src}" draggable="false" style="width:100%;display:block;border-radius:8px;pointer-events:none">`;
+                }
+                if (item.rot) el.style.transform = `rotate(${item.rot}deg)`;
+                [['move', '✥'], ['rotate', '⟳'], ['resize', '↘']].forEach(([t, ic]) => {
+                    const h = document.createElement('div');
+                    h.className = 'ci-handle ci-' + t + ' no-print'; h.textContent = ic;
+                    h.addEventListener('pointerdown', ev => startCoverGesture(ev, t, item, el));
+                    h.onclick = ev => ev.stopPropagation();
+                    el.appendChild(h);
+                });
+                el.onclick = (e) => {
+                    e.stopPropagation(); selectedCoverItemId = item.id;
+                    document.querySelectorAll('#cover-elements-layer .cover-item').forEach(x => x.classList.remove('selected'));
+                    el.classList.add('selected');
+                };
                 itemsLayer.appendChild(el);
             });
         }
 
-        function deselectCoverItem(e) { if (e.target.id === 'a4-cover-paper') selectedCoverItemId = null; }
+        // سحب وتدوير وتغيير حجم عناصر الغلاف عبر المقابض الزرقاء
+        function startCoverGesture(e, type, item, el) {
+            e.preventDefault(); e.stopPropagation();
+            const paper = document.getElementById('a4-cover-paper');
+            const k = paper.getBoundingClientRect().width / 794;
+            const h = e.currentTarget; h.setPointerCapture(e.pointerId);
+            const sx = e.clientX, sy = e.clientY, x0 = item.x, y0 = item.y, w0 = item.width, r0 = item.rot || 0;
+            const rc = el.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2;
+            const a0 = Math.atan2(sy - cy, sx - cx), rad = r0 * Math.PI / 180;
+            const mv = ev => {
+                const dx = (ev.clientX - sx) / k, dy = (ev.clientY - sy) / k;
+                if (type === 'move') {
+                    item.x = Math.round(x0 + dx); item.y = Math.round(y0 + dy);
+                    el.style.left = item.x + 'px'; el.style.top = item.y + 'px';
+                } else if (type === 'resize') {
+                    item.width = Math.min(794, Math.max(60, Math.round(w0 + dx * Math.cos(rad) + dy * Math.sin(rad))));
+                    el.style.width = item.width + 'px';
+                } else {
+                    let d = r0 + (Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180 / Math.PI;
+                    d = ((Math.round(d) % 360) + 360) % 360; if (d > 180) d -= 360;
+                    [0, 90, -90, 180].forEach(a => { if (Math.abs(d - a) < 4) d = a; });
+                    item.rot = d; el.style.transform = `rotate(${d}deg)`;
+                }
+            };
+            const up = () => {
+                h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up);
+                saveProjectsToStorage();
+            };
+            h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+        }
+
+        function deselectCoverItem(e) {
+            if (!['a4-cover-paper', 'cover-elements-layer', 'cover-frame-layer', 'cover-bg-layer'].includes(e.target.id)) return;
+            const it = currentProject.cover.items.find(i => i.id === selectedCoverItemId);
+            if (!it) return;
+            const paper = document.getElementById('a4-cover-paper'), r = paper.getBoundingClientRect(), k = r.width / 794;
+            it.x = Math.max(0, Math.round((e.clientX - r.left) / k - it.width / 2));
+            it.y = Math.max(0, Math.round((e.clientY - r.top) / k - 20));
+            saveProjectsToStorage(); renderCoverCanvas();
+        }
+        document.getElementById('a4-lesson-paper').addEventListener('click', e => {
+            if (e.target.closest('.lesson-block')) return;
+            const blocks = [...document.querySelectorAll('#lesson-blocks-container .lesson-block')];
+            if (!blocks.length) return;
+            let best = 0, bd = 1e9;
+            blocks.forEach((b, i) => { const r = b.getBoundingClientRect(), d = Math.abs(e.clientY - (r.top + r.height / 2)); if (d < bd) { bd = d; best = i; } });
+            selectActiveLessonBlock(best);
+            const ed = blocks[best].querySelector('[contenteditable="true"]');
+            if (ed) { ed.focus(); const rg = document.createRange(); rg.selectNodeContents(ed); rg.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(rg); }
+        });
+        const COVER_FRAMES = [['frame-none', 'بدون'], ['frame-classic', 'كلاسيك'], ['frame-modern', 'عصري'], ['frame-academic', 'أكاديمي'], ['frame-gold', 'ذهبي']];
+        const COVER_BGS = ['#ffffff', '#fffbeb', '#ecfeff', '#fdf2f8', 'linear-gradient(135deg,#f8fafc 0%,#e0e7ff 50%,#c7d2fe 100%)', 'linear-gradient(180deg,#0f172a,#1e293b)'];
+        const COVER_TEMPLATES = [
+            { name: 'أزرق هادئ', bg: COVER_BGS[4], frame: 'frame-modern', c: ['#1e3a8a', '#334155', '#475569'] },
+            { name: 'أكاديمي', bg: '#fffbeb', frame: 'frame-academic', c: ['#7c2d12', '#78350f', '#57534e'] },
+            { name: 'ذهبي داكن', bg: COVER_BGS[5], frame: 'frame-gold', c: ['#fbbf24', '#e2e8f0', '#cbd5e1'] },
+            { name: 'بسيط', bg: '#ffffff', frame: 'frame-none', c: ['#0f172a', '#334155', '#64748b'] }
+        ];
+        function coverTxt(text, y, size, color) { return { id: 'c-t' + Date.now() + y, type: 'text', x: 120, y, width: 554, text, fontFamily: 'Cairo', fontSize: size, color, align: 'center' }; }
+        function applyCoverTemplate(i) {
+            const t = COVER_TEMPLATES[i], c = currentProject.cover;
+            c.bgStyle = t.bg; c.frame = t.frame;
+            c.items = c.items.filter(x => x.type === 'image').concat([
+                coverTxt(currentProject.title || 'عنوان الملزمة', 380, 48, t.c[0]),
+                coverTxt(currentProject.headerSubject || 'المادة', 540, 28, t.c[1]),
+                coverTxt(currentProject.headerTeacher || 'اسم الأستاذ', 900, 24, t.c[2])
+            ]);
+            selectedCoverItemId = null; saveProjectsToStorage(); renderCoverCanvas(); closeToolDrawer();
+        }
+        function setCoverFrame(f) { currentProject.cover.frame = f; saveProjectsToStorage(); renderCoverCanvas(); }
+        function setCoverBg(i) { currentProject.cover.bgStyle = COVER_BGS[i]; saveProjectsToStorage(); renderCoverCanvas(); }
+        function selectedCoverItem() {
+            const it = currentProject.cover.items.find(x => x.id === selectedCoverItemId);
+            if (!it) showToast('اضغط على عنصر في الغلاف أولاً', 'error');
+            return it;
+        }
+        function resizeCoverItem(d) {
+            const it = selectedCoverItem(); if (!it) return;
+            if (it.type === 'text') it.fontSize = Math.min(90, Math.max(12, (it.fontSize || 24) + d / 10));
+            else it.width = Math.min(794, Math.max(60, it.width + d));
+            saveProjectsToStorage(); renderCoverCanvas();
+        }
+        function deleteCoverItem() {
+            const it = selectedCoverItem(); if (!it) return;
+            currentProject.cover.items = currentProject.cover.items.filter(x => x !== it);
+            selectedCoverItemId = null; saveProjectsToStorage(); renderCoverCanvas();
+        }
         function openCoverDrawer(tool) {
-            const drawer = document.getElementById('tool-drawer');
-            drawer.classList.remove('hidden');
-            document.getElementById('drawer-title').textContent = 'أدوات الغلاف';
-            document.getElementById('drawer-content').innerHTML = `<button onclick="addCoverText()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs">+ إضافة نص جديد</button>`;
+            const B = 'px-3 py-2 rounded-xl font-bold text-xs ';
+            document.getElementById('tool-drawer').classList.remove('hidden');
+            document.getElementById('drawer-title').textContent = tool === 'frames' ? 'إطارات وقوالب الغلاف' : 'نص وصور الغلاف';
+            document.getElementById('drawer-content').innerHTML = tool === 'frames' ? `
+                <div class="space-y-3">
+                    <div class="flex flex-wrap gap-2">${COVER_TEMPLATES.map((t, i) => `<button onclick="applyCoverTemplate(${i})" class="${B}bg-amber-100 text-amber-900">قالب: ${t.name}</button>`).join('')}</div>
+                    <div class="flex flex-wrap gap-2">${COVER_FRAMES.map(f => `<button onclick="setCoverFrame('${f[0]}')" class="${B}bg-teal-50 text-teal-800 border border-teal-200">${f[1]}</button>`).join('')}</div>
+                    <div class="flex flex-wrap gap-2">${COVER_BGS.map((b, i) => `<button onclick="setCoverBg(${i})" class="w-9 h-9 rounded-xl border border-slate-300" style="background:${b}"></button>`).join('')}</div>
+                </div>` : `
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="addCoverText()" class="${B}bg-indigo-600 text-white">+ نص جديد</button>
+                    <button onclick="pickImage('cover')" class="${B}bg-rose-600 text-white"><i class="fa-solid fa-image"></i> صورة من المعرض</button>
+                    <button onclick="resizeCoverItem(40)" class="${B}bg-slate-100">تكبير المحدد</button>
+                    <button onclick="resizeCoverItem(-40)" class="${B}bg-slate-100">تصغير المحدد</button>
+                    <button onclick="deleteCoverItem()" class="${B}bg-rose-50 text-rose-700 border border-rose-200">حذف المحدد</button>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">اضغط على عنصر لتحديده: اسحب ✥ للنقل، ⟳ للتدوير، ↘ لتغيير العرض. أو اضغط مكان فاضي بالورقة لنقله هناك.</p>`;
+        }
+        let imgTarget = 'lesson';
+        function pickImage(t) { imgTarget = t; document.getElementById('img-file-input').click(); }
+        function onImagePicked(input) {
+            const f = input.files && input.files[0]; input.value = ''; if (!f) return;
+            const fr = new FileReader();
+            fr.onload = () => {
+                const im = new Image();
+                im.onload = () => {
+                    const k = Math.min(1, 1100 / Math.max(im.width, im.height));
+                    const cv = document.createElement('canvas'); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+                    const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height);
+                    placeImage(cv.toDataURL('image/jpeg', 0.82));
+                };
+                im.onerror = () => showToast('تعذر قراءة الصورة', 'error');
+                im.src = fr.result;
+            };
+            fr.readAsDataURL(f);
+        }
+        function placeImage(src) {
+            if (imgTarget === 'cover') {
+                const it = { id: 'c-img-' + Date.now(), type: 'image', x: 247, y: 600, width: 300, src };
+                currentProject.cover.items.push(it); selectedCoverItemId = it.id;
+                saveProjectsToStorage(); renderCoverCanvas();
+                const el = [...document.querySelectorAll('#cover-elements-layer .cover-item')].pop(); if (el) el.classList.add('selected');
+            } else {
+                insertBlockObj({ id: 'blk-' + Date.now(), type: 'image', src, imgWidth: 70, align: 'center' });
+            }
+            closeToolDrawer();
+        }
+        function resizeImg(idx, d) {
+            const b = currentProject.pages[currentLessonPageIndex].blocks[idx];
+            b.imgWidth = Math.min(100, Math.max(20, (b.imgWidth || 70) + d));
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
         }
         function closeToolDrawer() { document.getElementById('tool-drawer').classList.add('hidden'); }
         function addCoverText() {
@@ -800,10 +1108,16 @@
             page.blocks.forEach((block, index) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = `lesson-block group rounded-xl ${activeLessonBlockIndex === index ? 'active-block' : ''}`;
+                if (block.mt) wrapper.style.marginTop = block.mt + 'px';
+                if (block.dir) wrapper.dir = block.dir;
+                if (block.bg) { wrapper.style.background = block.bg; wrapper.style.padding = '10px'; wrapper.style.borderRadius = '14px'; }
                 wrapper.onclick = (e) => { e.stopPropagation(); selectActiveLessonBlock(index); };
                 wrapper.innerHTML = `
                     <div class="block-actions absolute -top-3 left-2 bg-slate-800 text-white rounded-lg px-1.5 py-0.5 flex items-center gap-1 shadow-md z-20 text-[11px]">
-                        <button onclick="deleteLessonBlock(${index})" class="p-1 text-rose-400"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="event.stopPropagation(); moveLessonBlock(${index}, -1)" class="p-1.5" title="للأعلى"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="event.stopPropagation(); moveLessonBlock(${index}, 1)" class="p-1.5" title="للأسفل"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="event.stopPropagation(); duplicateLessonBlock(${index})" class="p-1.5" title="تكرار"><i class="fa-regular fa-copy"></i></button>
+                        <button onclick="deleteLessonBlock(${index})" class="p-1.5 text-rose-400" title="حذف"><i class="fa-solid fa-trash"></i></button>
                     </div>
                     ${renderSingleLessonBlockHTML(block, index)}
                 `;
@@ -818,7 +1132,7 @@
             const col = block.color || defaultColor;
             const al = block.align || 'right';
             const fw = (block.bold !== undefined ? block.bold : defaultBold) ? '800' : '500';
-            return `font-family:'${ff}', sans-serif; font-size:${fs}px; color:${col}; text-align:${al}; font-weight:${fw};`;
+            return `font-family:'${ff}', sans-serif; font-size:${fs}px; color:${col}; text-align:${al}; font-weight:${fw};${block.lh ? 'line-height:' + block.lh + ';' : ''}${block.italic ? 'font-style:italic;' : ''}${block.underline ? 'text-decoration:underline;' : ''}`;
         }
 
         function renderSingleLessonBlockHTML(block, idx) {
@@ -832,12 +1146,67 @@
                 case 'list-bullet':
                     return `<div class="px-3 py-2 rounded-xl bg-slate-50 border"><div class="space-y-2">${(block.items || []).map((it, i) => `<div class="flex items-start gap-2"><span class="text-indigo-600">•</span><div contenteditable="true" oninput="updateListItem(${idx}, ${i}, this.innerHTML)" style="${getBlockInlineTypography(block, 17, '#1e293b', false)}" class="flex-1 outline-none">${it}</div></div>`).join('')}</div></div>`;
                 case 'rule':
-                    return `<div class="bg-blue-50 border-r-4 border-blue-600 border rounded-2xl p-4"><div class="font-extrabold text-blue-900 mb-1">${block.title}</div><div contenteditable="true" oninput="updateBlockField(${idx}, 'body', this.innerHTML)" style="${getBlockInlineTypography(block, 16, '#1e293b', false)}">${block.body}</div></div>`;
+                    return `<div class="bg-blue-50 border-r-4 border-blue-600 border rounded-2xl p-4"><div contenteditable="true" oninput="updateBlockField(${idx}, 'title', this.innerHTML)" class="font-extrabold text-blue-900 mb-1 outline-none">${block.title}</div><div contenteditable="true" oninput="updateBlockField(${idx}, 'body', this.innerHTML)" style="${getBlockInlineTypography(block, 16, '#1e293b', false)}">${block.body}</div></div>`;
+                case 'divider':
+                    return `<div class="py-2"><hr style="border:0;border-top:3px solid ${block.color && block.color !== '#0f172a' ? block.color : '#c7d2fe'};border-radius:2px"></div>`;
+                case 'spacer':
+                    return `<div style="height:${block.h || 40}px" class="relative rounded-lg border border-dashed border-slate-300 print:border-0"><div class="no-print absolute inset-0 flex items-center justify-center gap-2 text-[11px] text-slate-400"><span>مساحة فارغة</span><button onclick="event.stopPropagation(); resizeSpacer(${idx}, -20)" class="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-black">−</button><button onclick="event.stopPropagation(); resizeSpacer(${idx}, 20)" class="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-black">+</button></div></div>`;
+                case 'table': {
+                    const cells = block.cells || [['']];
+                    const ty = getBlockInlineTypography(block, 16, '#1e293b', false);
+                    const rows = cells.map((row, r) => `<tr>${row.map((c, ci) => r === 0
+                        ? `<th class="border border-indigo-300 bg-indigo-100 px-2 py-1.5"><div contenteditable="true" oninput="updateTableCell(${idx}, ${r}, ${ci}, this.innerHTML)" style="${ty}font-weight:800;" class="outline-none min-h-[1.4em]">${c}</div></th>`
+                        : `<td class="border border-slate-300 px-2 py-1.5"><div contenteditable="true" oninput="updateTableCell(${idx}, ${r}, ${ci}, this.innerHTML)" style="${ty}" class="outline-none min-h-[1.4em]">${c}</div></td>`).join('')}</tr>`).join('');
+                    const btn = 'px-2 h-8 rounded-lg bg-slate-200 text-[11px] font-bold';
+                    return `<div><table class="w-full border-collapse" style="table-layout:fixed">${rows}</table>
+                        <div class="no-print flex flex-wrap gap-1 mt-1.5">
+                            <button onclick="event.stopPropagation(); tableEdit(${idx}, 'addRow')" class="${btn}">+ صف</button>
+                            <button onclick="event.stopPropagation(); tableEdit(${idx}, 'delRow')" class="${btn}">− صف</button>
+                            <button onclick="event.stopPropagation(); tableEdit(${idx}, 'addCol')" class="${btn}">+ عمود</button>
+                            <button onclick="event.stopPropagation(); tableEdit(${idx}, 'delCol')" class="${btn}">− عمود</button>
+                        </div></div>`;
+                }
+                case 'example':
+                    return `<div class="rounded-2xl border border-amber-300 overflow-hidden">
+                        <div class="bg-amber-100 px-4 py-2"><span class="font-extrabold text-amber-900 text-sm">✎ مثال</span>
+                            <div contenteditable="true" oninput="updateBlockField(${idx}, 'question', this.innerHTML)" style="${getBlockInlineTypography(block, 18, '#78350f', true)}" class="outline-none mt-1">${block.question || ''}</div></div>
+                        <div class="bg-emerald-50 px-4 py-2 border-t border-amber-200"><span class="font-extrabold text-emerald-800 text-sm">✓ الحل</span>
+                            <div contenteditable="true" oninput="updateBlockField(${idx}, 'solution', this.innerHTML)" style="${getBlockInlineTypography(block, 18, '#14532d', false)}" class="outline-none mt-1">${block.solution || ''}</div></div>
+                    </div>`;
+                case 'image':
+                    return `<div class="flex flex-col items-center gap-1 py-1"><img src="${block.src}" draggable="false" style="width:${block.imgWidth || 70}%;max-width:100%;border-radius:12px"><div class="no-print flex gap-1"><button onclick="event.stopPropagation(); resizeImg(${idx}, -10)" class="w-8 h-8 rounded-lg bg-slate-200 font-black">−</button><button onclick="event.stopPropagation(); resizeImg(${idx}, 10)" class="w-8 h-8 rounded-lg bg-slate-200 font-black">+</button></div></div>`;
                 default:
                     return '';
             }
         }
 
+        function resizeSpacer(idx, d) {
+            const b = currentProject.pages[currentLessonPageIndex].blocks[idx];
+            b.h = Math.min(400, Math.max(20, (b.h || 40) + d));
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
+        function updateTableCell(idx, r, c, val) { currentProject.pages[currentLessonPageIndex].blocks[idx].cells[r][c] = val; saveProjectsToStorage(); }
+        function tableEdit(idx, op) {
+            const b = currentProject.pages[currentLessonPageIndex].blocks[idx], cols = b.cells[0].length;
+            if (op === 'addRow') b.cells.push(Array(cols).fill(''));
+            else if (op === 'delRow' && b.cells.length > 2) b.cells.pop();
+            else if (op === 'addCol' && cols < 8) b.cells.forEach((row, r) => row.push(r === 0 ? 'عمود ' + (cols + 1) : ''));
+            else if (op === 'delCol' && cols > 1) b.cells.forEach(row => row.pop());
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
+        function moveLessonBlock(idx, d) {
+            const bl = currentProject.pages[currentLessonPageIndex].blocks, t = idx + d;
+            if (t < 0 || t >= bl.length) return;
+            [bl[idx], bl[t]] = [bl[t], bl[idx]];
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(t);
+        }
+        function duplicateLessonBlock(idx) {
+            const bl = currentProject.pages[currentLessonPageIndex].blocks;
+            const c = JSON.parse(JSON.stringify(bl[idx]));
+            c.id = 'blk-' + Date.now() + '-' + Math.floor(Math.random() * 1e4);
+            bl.splice(idx + 1, 0, c);
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx + 1);
+        }
         function updateListItem(idx, i, val) { currentProject.pages[currentLessonPageIndex].blocks[idx].items[i] = val; saveProjectsToStorage(); }
         function updateBlockField(idx, field, val) { currentProject.pages[currentLessonPageIndex].blocks[idx][field] = val; saveProjectsToStorage(); }
         function deleteLessonBlock(idx) { currentProject.pages[currentLessonPageIndex].blocks.splice(idx, 1); saveProjectsToStorage(); renderCurrentLessonPage(); }
@@ -853,19 +1222,115 @@
             document.getElementById('lesson-floating-format-bar').classList.add('hidden');
         }
 
+        // ===== تنسيق على كلمات محددة أو على البلوك كله =====
+        let savedRange = null;
+        function editableOf(node) {
+            const el = node && (node.nodeType === 1 ? node : node.parentElement);
+            return el && el.closest ? el.closest('#lesson-blocks-container [contenteditable="true"]') : null;
+        }
+        document.addEventListener('selectionchange', () => {
+            const sel = getSelection();
+            if (!sel.rangeCount) return;
+            const r = sel.getRangeAt(0), host = editableOf(r.commonAncestorContainer);
+            if (!host) return;                       // التحديد خارج النص (مثل شريط الأدوات): نحتفظ بالقديم
+            if (sel.isCollapsed) { savedRange = null; return; }
+            savedRange = r.cloneRange();
+            const blocks = [...document.querySelectorAll('#lesson-blocks-container .lesson-block')];
+            const i = blocks.indexOf(host.closest('.lesson-block'));
+            if (i !== -1 && i !== activeLessonBlockIndex) selectActiveLessonBlock(i);
+        });
+        // يرجع الحقل النصي إذا في كلمات محددة داخل البلوك النشط
+        function inlineHost() {
+            if (activeLessonBlockIndex === null || !savedRange) return null;
+            const w = document.querySelectorAll('#lesson-blocks-container .lesson-block')[activeLessonBlockIndex];
+            const host = editableOf(savedRange.commonAncestorContainer);
+            return (w && host && w.contains(host)) ? host : null;
+        }
+        function runInline(cmd, val) {
+            const host = inlineHost(); if (!host) return false;
+            host.focus();
+            const sel = getSelection(); sel.removeAllRanges(); sel.addRange(savedRange);
+            document.execCommand(cmd, false, val);
+            host.dispatchEvent(new Event('input', { bubbles: true }));   // للحفظ
+            return true;
+        }
+        function inlineFontSize(delta) {
+            const host = inlineHost(); if (!host) return false;
+            const base = parseFloat(getComputedStyle(editableOf(savedRange.startContainer) || host).fontSize) || 18;
+            const px = Math.min(60, Math.max(10, Math.round(base + delta)));
+            host.focus();
+            const sel = getSelection(); sel.removeAllRanges(); sel.addRange(savedRange);
+            document.execCommand('fontSize', false, '7');
+            host.querySelectorAll('font[size="7"]').forEach(f => {
+                const sp = document.createElement('span'); sp.style.fontSize = px + 'px';
+                while (f.firstChild) sp.appendChild(f.firstChild);
+                f.replaceWith(sp);
+            });
+            host.dispatchEvent(new Event('input', { bubbles: true }));
+            return true;
+        }
+
+        function formatScript(cmd) {
+            if (!runInline(cmd)) showToast('حدد كلمات داخل النص أولاً', 'error');
+        }
+        function clearActiveFormat() {
+            if (activeLessonBlockIndex === null) return;
+            const host = inlineHost();
+            if (host) {
+                runInline('removeFormat');
+                const sel = getSelection();
+                host.querySelectorAll('span[style],font,b,i,u,strong,em,sub,sup').forEach(el => {
+                    if (!sel.containsNode(el, true)) return;
+                    while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+                    el.remove();
+                });
+                host.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+            const b = currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex], d = makeLessonBlock(b.type);
+            ['fontFamily', 'fontSize', 'color', 'align', 'bold'].forEach(k => b[k] = d[k]);
+            delete b.italic; delete b.underline; delete b.lh; delete b.mt; delete b.dir; delete b.bg;
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
+        }
+        function toggleBlockDir() {
+            if (activeLessonBlockIndex === null) return;
+            const b = currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex];
+            b.dir = b.dir === 'ltr' ? 'rtl' : 'ltr';
+            if (b.dir === 'ltr' && (!b.align || b.align === 'right')) b.align = 'left';
+            else if (b.dir === 'rtl' && b.align === 'left') b.align = 'right';
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
+        }
+        function setBlockBg(c) {
+            if (activeLessonBlockIndex === null) return;
+            const b = currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex];
+            if (c) b.bg = c; else delete b.bg;
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
+        }
+        function adjustSpacing(kind, d) {
+            if (activeLessonBlockIndex === null) return;
+            const b = currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex];
+            if (kind === 'lh') b.lh = Math.min(3, Math.max(1, +((b.lh || 1.6) + d).toFixed(1)));
+            else b.mt = Math.min(80, Math.max(0, (b.mt || 0) + d));
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
+        }
         function updateActiveLessonBlockStyle(prop, val) {
             if (activeLessonBlockIndex === null) return;
+            if (prop === 'color' && runInline('foreColor', val)) return;
+            if (prop === 'fontFamily' && runInline('fontName', val)) return;
             currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex][prop] = val;
             saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
         }
         function adjustActiveLessonBlockFontSize(delta) {
             if (activeLessonBlockIndex === null) return;
+            if (inlineFontSize(delta)) return;
             const b = currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex];
             b.fontSize = Math.min(48, Math.max(12, (b.fontSize || 18) + delta));
             saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
         }
         function toggleActiveLessonBlockProp(prop) {
             if (activeLessonBlockIndex === null) return;
+            const cmd = { bold: 'bold', italic: 'italic', underline: 'underline' }[prop];
+            if (cmd && runInline(cmd)) return;
             const b = currentProject.pages[currentLessonPageIndex].blocks[activeLessonBlockIndex];
             b[prop] = !b[prop];
             saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(activeLessonBlockIndex);
@@ -874,9 +1339,11 @@
         function openLessonDrawer(tool) {
             const drawer = document.getElementById('tool-drawer');
             drawer.classList.remove('hidden');
+            const B = 'px-3 py-2 rounded-xl font-bold text-xs ';
+            const content = document.getElementById('drawer-content');
             if (tool === 'text') {
                 document.getElementById('drawer-title').textContent = 'إدراج عناوين ونصوص';
-                document.getElementById('drawer-content').innerHTML = `
+                content.innerHTML = `
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <button onclick="insertLessonBlock('heading-main')" class="p-2 bg-indigo-50 rounded-xl font-bold text-xs">+ عنوان رئيسي</button>
                         <button onclick="insertLessonBlock('heading-sub')" class="p-2 bg-teal-50 rounded-xl font-bold text-xs">+ عنوان فرعي</button>
@@ -884,24 +1351,52 @@
                         <button onclick="insertLessonBlock('list-bullet')" class="p-2 bg-purple-50 rounded-xl font-bold text-xs">+ قائمة نقاط</button>
                     </div>`;
             } else if (tool === 'boxes') {
-                document.getElementById('drawer-title').textContent = 'إدراج قواعد';
-                document.getElementById('drawer-content').innerHTML = `<button onclick="insertLessonBlock('rule')" class="p-3 bg-blue-50 rounded-xl font-bold text-xs">+ صندوق قاعدة / قانون</button>`;
+                document.getElementById('drawer-title').textContent = 'إدراج قواعد وأمثلة وجداول';
+                content.innerHTML = `<div class="flex flex-wrap gap-2">
+                    <button onclick="insertLessonBlock('rule')" class="p-3 bg-blue-50 rounded-xl font-bold text-xs">+ صندوق قاعدة / قانون</button>
+                    <button onclick="insertLessonBlock('example')" class="p-3 bg-amber-100 text-amber-900 rounded-xl font-bold text-xs">+ مثال محلول (سؤال وحل)</button>
+                    <button onclick="insertLessonBlock('table')" class="p-3 bg-purple-100 text-purple-900 rounded-xl font-bold text-xs">+ جدول</button>
+                    <button onclick="insertLessonBlock('divider')" class="p-3 bg-slate-100 rounded-xl font-bold text-xs">+ فاصل (خط)</button>
+                    <button onclick="insertLessonBlock('spacer')" class="p-3 bg-slate-100 rounded-xl font-bold text-xs">+ مساحة فارغة</button></div>`;
             } else {
-                document.getElementById('drawer-title').textContent = 'أدوات أخرى';
-                document.getElementById('drawer-content').innerHTML = `<p class="text-xs text-slate-500">اختر من القائمة.</p>`;
+                document.getElementById('drawer-title').textContent = 'صور وقوالب';
+                content.innerHTML = `<div class="space-y-3">
+                    <button onclick="pickImage('lesson')" class="${B}bg-rose-600 text-white"><i class="fa-solid fa-image"></i> إدراج صورة من المعرض</button>
+                    <div class="flex flex-wrap gap-2">${LESSON_TEMPLATES.map((t, i) => `<button onclick="addTemplatePage(${i})" class="${B}bg-amber-100 text-amber-900">صفحة جديدة: ${t.name}</button>`).join('')}</div></div>`;
             }
         }
 
-        function insertLessonBlock(type) {
-            const page = currentProject.pages[currentLessonPageIndex];
-            let newBlock = { id: 'blk-' + Date.now(), type, fontFamily: 'Cairo', fontSize: 18, color: '#0f172a', align: 'right' };
+        function makeLessonBlock(type) {
+            let newBlock = { id: 'blk-' + Date.now() + '-' + Math.floor(Math.random() * 1e4), type, fontFamily: 'Cairo', fontSize: 18, color: '#0f172a', align: 'right' };
             if (type === 'heading-main') { newBlock.content = 'عنوان رئيسي جديد'; newBlock.fontSize = 28; newBlock.color = '#1e3a8a'; newBlock.bold = true; }
             else if (type === 'heading-sub') { newBlock.content = 'عنوان فرعي جديد'; newBlock.fontSize = 21; newBlock.color = '#0f766e'; newBlock.bold = true; }
             else if (type === 'text') { newBlock.content = 'اكتب النص هنا...'; }
             else if (type === 'list-bullet') { newBlock.items = ['النقطة الأولى...']; }
             else if (type === 'rule') { newBlock.title = 'قاعدة أساسية'; newBlock.body = 'نص القاعدة...'; }
-            page.blocks.push(newBlock);
-            saveProjectsToStorage(); renderCurrentLessonPage(); closeToolDrawer();
+            else if (type === 'example') { newBlock.question = 'اكتب نص السؤال هنا...'; newBlock.solution = 'اكتب خطوات الحل هنا...'; }
+            else if (type === 'table') { newBlock.fontSize = 16; newBlock.cells = [['العمود 1', 'العمود 2', 'العمود 3'], ['', '', ''], ['', '', '']]; }
+            else if (type === 'spacer') { newBlock.h = 40; }
+            return newBlock;
+        }
+        const LESSON_TEMPLATES = [
+            { name: 'درس وشرح', blocks: ['heading-main', 'text', 'rule', 'text'] },
+            { name: 'قاعدة وأمثلة', blocks: ['heading-sub', 'rule', 'list-bullet', 'list-bullet'] },
+            { name: 'ملخص ومراجعة', blocks: ['heading-main', 'list-bullet', 'rule'] }
+        ];
+        function addTemplatePage(i) {
+            const pg = { id: 'page-' + Date.now(), showHeaderFooter: true, blocks: LESSON_TEMPLATES[i].blocks.map(makeLessonBlock) };
+            currentProject.pages.splice(currentLessonPageIndex + 1, 0, pg);
+            currentLessonPageIndex++; deselectActiveLessonBlock();
+            saveProjectsToStorage(); renderLessonsPagesStrip(); renderCurrentLessonPage(); closeToolDrawer();
+        }
+        function insertBlockObj(newBlock) {
+            const page = currentProject.pages[currentLessonPageIndex];
+            const at = (activeLessonBlockIndex !== null && activeLessonBlockIndex < page.blocks.length) ? activeLessonBlockIndex + 1 : page.blocks.length;
+            page.blocks.splice(at, 0, newBlock);
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(at);
+        }
+        function insertLessonBlock(type) {
+            insertBlockObj(makeLessonBlock(type)); closeToolDrawer();
         }
 
         function applySelectionHighlight(bgColor) {
