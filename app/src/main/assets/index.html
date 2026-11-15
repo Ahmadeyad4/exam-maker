@@ -18,6 +18,10 @@
     <!-- QRCode.js for real instant QR code generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 
+    <!-- KaTeX للمعادلات الرياضية -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
+
     <style>
         :root {
             --a4-width: 794px;  /* 210mm at 96dpi */
@@ -47,6 +51,50 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #64748b;
         }
+
+
+
+        /* ===== المعاينة: ورقات A4 منفصلة ===== */
+        #preview-overlay { position: fixed; inset: 0; z-index: 80; display: none; flex-direction: column; background: #475569; }
+        #preview-overlay.open { display: flex; }
+        #preview-scroll { flex: 1; overflow: auto; padding: 22px 12px 60px; display: flex; flex-direction: column; align-items: center; gap: 34px; }
+        .sheet-wrap { flex: none; position: relative; }
+        .sheet-wrap .a4-paper { box-shadow: 0 14px 36px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.12); }
+        .sheet-label { text-align: center; color: #e2e8f0; font-size: 12px; font-weight: 700; margin-top: 8px; }
+        .preview-sheet { height: var(--a4-height) !important; min-height: 0 !important; overflow: hidden; }
+        .preview-sheet .no-print { display: none !important; }
+        .preview-sheet .border-dashed { border-color: transparent !important; }
+        .preview-sheet [contenteditable] { -webkit-user-modify: read-only; }
+        @media print { #preview-overlay { display: none !important; } #print-area .a4-paper { box-shadow: none !important; } }
+
+
+        #drag-indicator { position: fixed; height: 5px; border-radius: 3px; background: #4f46e5; z-index: 70; pointer-events: none; box-shadow: 0 0 0 3px rgba(79,70,229,.25); }
+        body.dragging-block { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+        .img-caption:empty::before { content: attr(data-ph); color: #94a3b8; }
+        .preview-sheet .img-caption:empty { display: none; }
+
+
+        /* ===== مدير الصفحات (مصغّرات + سحب) ===== */
+        #pages-overlay { position: fixed; inset: 0; z-index: 80; display: none; flex-direction: column; background: #334155; }
+        #pages-overlay.open { display: flex; }
+        .pm-tile { position: relative; cursor: pointer; }
+        .pm-thumb { position: relative; overflow: hidden; background: #fff; border-radius: 8px; aspect-ratio: 794 / 1123; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+        .pm-thumb * { pointer-events: none; }
+        .pm-current .pm-thumb { outline: 4px solid #818cf8; }
+        .pm-target .pm-thumb { outline: 4px solid #f59e0b; }
+        .pm-label { text-align: center; color: #e2e8f0; font-size: 12px; font-weight: 700; margin-top: 6px; }
+        .pm-grip { position: absolute; top: 6px; left: 6px; z-index: 5; width: 34px; height: 34px; border-radius: 999px; background: rgba(15,23,42,.85); color: #fff; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+        @media print { #pages-overlay { display: none !important; } }
+
+        /* ===== لوحة الأدوات عائمة + شريط التنقل بين الصفحات ===== */
+        #tool-drawer { position: fixed; z-index: 45; border-radius: 20px 20px 0 0; max-height: 55vh; box-shadow: 0 -10px 30px rgba(15,23,42,.18); }
+        #canvas-viewport { padding-bottom: 64px !important; }
+        #pager { position: fixed; z-index: 40; transform: translateX(-50%); display: flex; align-items: center; gap: 4px;
+                 background: rgba(15,23,42,.92); color: #fff; border-radius: 999px; padding: 4px; box-shadow: 0 6px 18px rgba(15,23,42,.35); user-select: none; }
+        #pager button { width: 38px; height: 38px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
+        #pager button:active { background: rgba(255,255,255,.2); }
+        #pager button:disabled { opacity: .3; }
+        #pager-label { min-width: 84px; text-align: center; font-size: 13px; font-weight: 700; padding: 0 6px; }
 
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         #canvas-viewport { touch-action: pan-x pan-y; }
@@ -232,6 +280,15 @@
                 print-color-adjust: exact !important;
             }
         }
+
+        /* ===== تثبيت الطباعة على الموبايل: بدون flex، وإخفاء كل شي عدا الورقات ===== */
+        @media print {
+            html, body { display: block !important; height: auto !important; min-height: 0 !important; overflow: visible !important; background: #fff !important; }
+            body > *:not(#print-area) { display: none !important; }
+            #print-area { display: block !important; width: 210mm; }
+            #print-area .print-page { display: block !important; overflow: hidden !important; box-sizing: border-box; }
+            #print-area .print-page.lesson-paper { display: flex !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -353,6 +410,8 @@
                         <span id="zoom-label" onclick="fitZoom()" title="ملاءمة الشاشة" class="text-xs font-bold text-slate-700 px-1.5 sm:px-2 cursor-pointer select-none">100%</span>
                         <button onclick="changeZoom(0.1)" class="w-7 h-7 rounded-lg hover:bg-white text-slate-600 flex items-center justify-center"><i class="fa-solid fa-plus text-xs"></i></button>
                     </div>
+                    <button onclick="openShareDialog()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition active:scale-95"><i class="fa-solid fa-share-nodes"></i><span>مشاركة / حفظ</span></button>
+                    <button onclick="openPreview()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition active:scale-95"><i class="fa-solid fa-eye"></i><span>معاينة</span></button>
                     <button onclick="exportAndPrintPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition active:scale-95">
                         <i class="fa-solid fa-print"></i>
                         <span class="hidden sm:inline">طباعة / PDF</span>
@@ -556,6 +615,10 @@
                 <button onclick="openLessonDrawer('boxes')" class="flex flex-col items-center gap-1 p-1.5 sm:p-2 rounded-xl hover:bg-blue-50 text-slate-700 transition">
                     <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-base"><i class="fa-solid fa-box-archive"></i></div>
                     <span class="text-[11px] font-bold">القواعد</span>
+                </button>
+                <button onclick="openLessonDrawer('quiz')" class="flex flex-col items-center gap-1 p-1.5 sm:p-2 rounded-xl hover:bg-emerald-50 text-slate-700 transition">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-base"><i class="fa-solid fa-circle-question"></i></div>
+                    <span class="text-[11px] font-bold">الأسئلة</span>
                 </button>
                 <button onclick="openLessonDrawer('media')" class="flex flex-col items-center gap-1 p-1.5 sm:p-2 rounded-xl hover:bg-rose-50 text-slate-700 transition">
                     <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base"><i class="fa-solid fa-images"></i></div>
@@ -829,7 +892,7 @@
             if (!vp || !vp.clientWidth) return;
             const cs = getComputedStyle(vp);
             const w = (vp.clientWidth - 2 * (parseFloat(cs.paddingLeft) || 0)) / 794;
-            const h = (vp.clientHeight - 2 * (parseFloat(cs.paddingTop) || 0)) / 1123;
+            const h = (vp.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0)) / 1123;
             currentZoom = Math.min(1, Math.max(0.2, +Math.min(w, h).toFixed(3)));
             lastVpW = vp.clientWidth; userZoomed = false; applyZoom();
         }
@@ -1046,6 +1109,12 @@
             fr.readAsDataURL(f);
         }
         function placeImage(src) {
+            if (imgTarget === 'col' && colImgTarget) {
+                const t = colImgTarget; colImgTarget = null;
+                const b = colBlock(t.idx);
+                if (b && b.cols[t.ci]) { b.cols[t.ci] = { kind: 'image', src, caption: b.cols[t.ci].caption || '' }; colRefresh(t.idx); }
+                closeToolDrawer(); return;
+            }
             if (imgTarget === 'cover') {
                 const it = { id: 'c-img-' + Date.now(), type: 'image', x: 247, y: 600, width: 300, src };
                 currentProject.cover.items.push(it); selectedCoverItemId = it.id;
@@ -1114,8 +1183,7 @@
                 wrapper.onclick = (e) => { e.stopPropagation(); selectActiveLessonBlock(index); };
                 wrapper.innerHTML = `
                     <div class="block-actions absolute -top-3 left-2 bg-slate-800 text-white rounded-lg px-1.5 py-0.5 flex items-center gap-1 shadow-md z-20 text-[11px]">
-                        <button onclick="event.stopPropagation(); moveLessonBlock(${index}, -1)" class="p-1.5" title="للأعلى"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button onclick="event.stopPropagation(); moveLessonBlock(${index}, 1)" class="p-1.5" title="للأسفل"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onpointerdown="startBlockDrag(event, ${index})" onclick="event.stopPropagation()" class="p-1.5 cursor-grab" style="touch-action:none" title="اسحب لإعادة ترتيب البلوك"><i class="fa-solid fa-grip-vertical"></i></button>
                         <button onclick="event.stopPropagation(); duplicateLessonBlock(${index})" class="p-1.5" title="تكرار"><i class="fa-regular fa-copy"></i></button>
                         <button onclick="deleteLessonBlock(${index})" class="p-1.5 text-rose-400" title="حذف"><i class="fa-solid fa-trash"></i></button>
                     </div>
@@ -1143,10 +1211,91 @@
                     return `<div class="border-b-2 border-teal-600/30 pb-1.5 pt-1 px-2"><div contenteditable="true" oninput="updateBlockField(${idx}, 'content', this.innerHTML)" style="${getBlockInlineTypography(block, 21, '#0f766e', true)}" class="outline-none">${block.content}</div></div>`;
                 case 'text':
                     return `<div contenteditable="true" oninput="updateBlockField(${idx}, 'content', this.innerHTML)" style="${getBlockInlineTypography(block, 18, '#0f172a', false)}" class="p-2 outline-none">${block.content}</div>`;
-                case 'list-bullet':
-                    return `<div class="px-3 py-2 rounded-xl bg-slate-50 border"><div class="space-y-2">${(block.items || []).map((it, i) => `<div class="flex items-start gap-2"><span class="text-indigo-600">•</span><div contenteditable="true" oninput="updateListItem(${idx}, ${i}, this.innerHTML)" style="${getBlockInlineTypography(block, 17, '#1e293b', false)}" class="flex-1 outline-none">${it}</div></div>`).join('')}</div></div>`;
+                case 'list-bullet': case 'list-number': {
+                    const isNum = block.type === 'list-number', ABJ = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي', 'ك', 'ل', 'م', 'ن', 'س', 'ع', 'ف', 'ص', 'ق', 'ر'];
+                    const mark = i => isNum
+                        ? `<span class="shrink-0 w-7 h-7 rounded-full bg-indigo-100 text-indigo-800 font-extrabold text-sm flex items-center justify-center">${block.numStyle === 'abj' ? (ABJ[i] || i + 1) : i + 1}</span>`
+                        : '<span class="text-indigo-600">•</span>';
+                    const bt = 'px-2 h-8 rounded-lg bg-slate-200 text-[11px] font-bold';
+                    return `<div class="px-3 py-2 rounded-xl bg-slate-50 border"><div class="space-y-2">${(block.items || []).map((it, i) => `<div class="flex items-start gap-2">${mark(i)}<div contenteditable="true" data-li="${i}" oninput="updateListItem(${idx}, ${i}, this.innerHTML)" onkeydown="listKey(event, ${idx}, ${i})" style="${getBlockInlineTypography(block, 17, '#1e293b', false)}" class="flex-1 outline-none min-h-[1.5em]">${it}</div></div>`).join('')}</div>
+                        <div class="no-print flex flex-wrap gap-1 mt-2">
+                            <button onclick="event.stopPropagation(); addListItem(${idx}, 1)" class="${bt}">+ بند</button>
+                            <button onclick="event.stopPropagation(); addListItem(${idx}, -1)" class="${bt}">− بند</button>
+                            ${isNum ? `<button onclick="event.stopPropagation(); toggleNumStyle(${idx})" class="${bt}">${block.numStyle === 'abj' ? 'الترقيم: أ ب ج ← 1 2 3' : 'الترقيم: 1 2 3 ← أ ب ج'}</button>` : ''}
+                        </div></div>`;
+                }
                 case 'rule':
                     return `<div class="bg-blue-50 border-r-4 border-blue-600 border rounded-2xl p-4"><div contenteditable="true" oninput="updateBlockField(${idx}, 'title', this.innerHTML)" class="font-extrabold text-blue-900 mb-1 outline-none">${block.title}</div><div contenteditable="true" oninput="updateBlockField(${idx}, 'body', this.innerHTML)" style="${getBlockInlineTypography(block, 16, '#1e293b', false)}">${block.body}</div></div>`;
+                case 'q-mcq': case 'q-fill': case 'q-tf': case 'q-essay': {
+                    const n = qNum(block);
+                    const q = `<div class="flex items-start gap-2">
+                        <span class="shrink-0 w-8 h-8 rounded-full bg-indigo-600 text-white font-extrabold flex items-center justify-center text-sm">${n}</span>
+                        <div contenteditable="true" oninput="updateBlockField(${idx}, 'question', this.innerHTML)" style="${getBlockInlineTypography(block, 17, '#0f172a', true)}" class="flex-1 outline-none min-h-[1.5em]">${block.question || ''}</div>
+                        ${block.type === 'q-tf' ? '<span class="shrink-0 flex gap-2 text-sm font-bold text-slate-700"><span class="px-3 py-0.5 border-2 border-slate-400 rounded-lg">صح</span><span class="px-3 py-0.5 border-2 border-slate-400 rounded-lg">خطأ</span></span>' : ''}
+                    </div>`;
+                    let extra = '';
+                    if (block.type === 'q-mcq') {
+                        const L = ['أ', 'ب', 'ج', 'د'];
+                        extra = `<div class="grid grid-cols-2 gap-x-4 gap-y-2 mt-2" style="padding-inline-start:40px">${(block.items || []).map((it, i) => `<div class="flex items-start gap-2"><span class="shrink-0 w-7 h-7 rounded-full border-2 border-slate-400 text-slate-700 font-bold text-sm flex items-center justify-center">${L[i] || ''}</span><div contenteditable="true" oninput="updateListItem(${idx}, ${i}, this.innerHTML)" style="${getBlockInlineTypography(block, 16, '#1e293b', false)}" class="flex-1 outline-none min-h-[1.4em]">${it}</div></div>`).join('')}</div>`;
+                    } else if (block.type === 'q-essay') {
+                        extra = `<div class="mt-1" style="padding-inline-start:40px">${Array.from({ length: block.lines || 3 }).map(() => '<div style="border-bottom:1.5px solid #94a3b8;height:34px"></div>').join('')}</div>
+                            <div class="no-print flex items-center gap-1 mt-1.5 text-[11px] text-slate-500"><span>عدد السطور:</span><button onclick="event.stopPropagation(); resizeLines(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-black">−</button><button onclick="event.stopPropagation(); resizeLines(${idx}, 1)" class="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-black">+</button></div>`;
+                    }
+                    return `<div class="rounded-2xl border border-slate-300 bg-white px-3 py-2.5">${q}${extra}</div>`;
+                }
+                case 'math': {
+                    const sym = [['a/b', '\\frac{}{}'], ['√', '\\sqrt{}'], ['ⁿ√', '\\sqrt[n]{}'], ['xⁿ', '^{}'], ['xₙ', '_{}'], ['∑', '\\sum_{i=1}^{n}'], ['∫', '\\int_{a}^{b}'], ['lim', '\\lim_{x \\to 0}'],
+                        ['π', '\\pi'], ['θ', '\\theta'], ['α', '\\alpha'], ['β', '\\beta'], ['Δ', '\\Delta'], ['∞', '\\infty'], ['±', '\\pm'], ['×', '\\times'], ['÷', '\\div'], ['≤', '\\leq'], ['≥', '\\geq'], ['≠', '\\neq'], ['≈', '\\approx'], ['→', '\\rightarrow'], ['°', '^{\\circ}'], ['( )', '\\left( \\right)'], ['sin', '\\sin'], ['cos', '\\cos'], ['tan', '\\tan'], ['log', '\\log']];
+                    return `<div dir="ltr" class="py-1"><div class="math-render" style="${getBlockInlineTypography(block, 26, '#0f172a', false)}overflow-x:auto;overflow-y:hidden;padding:4px 0">${mathHTML(block.latex)}</div>
+                        <div class="no-print mt-2 rounded-xl bg-slate-50 border border-slate-200 p-2" onclick="event.stopPropagation(); selectActiveLessonBlock(${idx})">
+                            <textarea dir="ltr" rows="2" spellcheck="false" oninput="updateMath(${idx}, this.value)" class="w-full rounded-lg border border-slate-300 p-2 text-sm font-mono outline-none focus:border-indigo-500" placeholder="اكتب المعادلة بصيغة LaTeX أو استخدم الأزرار">${escHTML(block.latex || '')}</textarea>
+                            <div class="flex flex-wrap gap-1 mt-1.5">${sym.map(([l, c]) => `<button data-s="${c}" onmousedown="event.preventDefault(); insertMath(${idx}, this.dataset.s)" class="min-w-[34px] h-8 px-1.5 rounded-lg bg-white border border-slate-300 text-sm font-bold text-slate-700 hover:bg-indigo-50">${l}</button>`).join('')}</div>
+                        </div></div>`;
+                }
+                case 'note': {
+                    const K = NOTE_KINDS[block.kind] || NOTE_KINDS.tip;
+                    return `<div class="rounded-2xl p-3" style="background:${K.bg};border:2px solid ${K.bd};border-inline-start-width:8px">
+                        <div class="flex items-center gap-2 mb-1"><i class="fa-solid ${K.ic}" style="color:${K.fg};font-size:18px"></i>
+                            <div contenteditable="true" oninput="updateBlockField(${idx}, 'title', this.innerHTML)" class="font-extrabold outline-none flex-1" style="color:${K.fg};font-size:18px">${block.title || ''}</div></div>
+                        <div contenteditable="true" oninput="updateBlockField(${idx}, 'body', this.innerHTML)" style="${getBlockInlineTypography(block, 16, '#1e293b', false)}" class="outline-none">${block.body || ''}</div>
+                        <div class="no-print flex flex-wrap items-center gap-1 mt-2 text-[11px] text-slate-500"><span>النوع:</span>${Object.entries(NOTE_KINDS).map(([k, v]) => `<button onclick="event.stopPropagation(); setNoteKind(${idx}, '${k}')" class="px-2 h-7 rounded-lg font-bold border" style="background:${v.bg};color:${v.fg};border-color:${block.kind === k ? v.fg : v.bd}">${v.name}</button>`).join('')}</div>
+                    </div>`;
+                }
+                case 'toc':
+                    return `<div class="rounded-2xl border-2 border-indigo-200 bg-indigo-50/40 px-4 py-3">
+                        <div contenteditable="true" oninput="updateBlockField(${idx}, 'title', this.innerHTML)" class="text-center font-extrabold text-indigo-900 outline-none mb-2" style="font-size:24px">${block.title || 'الفهرس'}</div>
+                        <div class="toc-list">${tocInner(block)}</div>
+                        <div class="no-print flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-500"><span>يتحدث تلقائياً من العناوين</span>
+                            <button onclick="event.stopPropagation(); toggleTocLevels(${idx})" class="px-2 h-8 rounded-lg bg-slate-200 font-bold text-slate-700">${block.levels === 'both' ? 'إخفاء العناوين الفرعية' : 'إظهار العناوين الفرعية'}</button></div>
+                    </div>`;
+                case 'cols': {
+                    const W = { '50': [50, 50], '60': [60, 40], '40': [40, 60] }[block.split || '50'];
+                    const kb = (ci, k, t) => `<button onclick="event.stopPropagation(); setColKind(${idx}, ${ci}, '${k}')" class="px-2 h-7 rounded-lg text-[11px] font-bold ${block.cols[ci].kind === k ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}">${t}</button>`;
+                    const sb = (v, t) => `<button onclick="event.stopPropagation(); setColSplit(${idx}, '${v}')" class="px-2 h-7 rounded-lg text-[11px] font-bold ${(block.split || '50') === v ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}">${t}</button>`;
+                    const cell = (c, ci) => {
+                        let body = '';
+                        if (c.kind === 'text') {
+                            body = `<div contenteditable="true" oninput="updateColCell(${idx}, ${ci}, 'content', this.innerHTML)" style="${getBlockInlineTypography(block, 17, '#0f172a', false)}" class="p-1 outline-none min-h-[2em]">${c.content || ''}</div>`;
+                        } else if (c.kind === 'image') {
+                            body = c.src
+                                ? `<img src="${c.src}" draggable="false" style="width:100%;display:block;border-radius:12px">
+                                   <div contenteditable="true" dir="rtl" data-ph="تعليق (اختياري)" oninput="updateColCell(${idx}, ${ci}, 'caption', this.innerHTML)" class="img-caption outline-none text-center" style="font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;color:#475569;margin-top:5px">${c.caption || ''}</div>
+                                   <div class="no-print mt-1"><button onclick="event.stopPropagation(); pickColImage(${idx}, ${ci})" class="px-2 h-7 rounded-lg bg-slate-200 text-[11px] font-bold">تغيير الصورة</button></div>`
+                                : `<div class="no-print border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-2 py-8 text-slate-500 text-xs"><i class="fa-solid fa-image text-2xl"></i><button onclick="event.stopPropagation(); pickColImage(${idx}, ${ci})" class="px-3 h-8 rounded-lg bg-rose-600 text-white font-bold">اختر صورة من المعرض</button></div>`;
+                        } else if (c.kind === 'table') {
+                            const ty = getBlockInlineTypography(block, 15, '#1e293b', false), t = c.cells || [['']];
+                            const bt = 'px-2 h-7 rounded-lg bg-slate-200 text-[11px] font-bold';
+                            body = `<table class="w-full border-collapse" style="table-layout:fixed">${t.map((row, r) => `<tr>${row.map((v, cc) => r === 0
+                                ? `<th class="border border-indigo-300 bg-indigo-100 px-1.5 py-1"><div contenteditable="true" oninput="updateColTable(${idx}, ${ci}, ${r}, ${cc}, this.innerHTML)" style="${ty}font-weight:800;" class="outline-none min-h-[1.4em]">${v}</div></th>`
+                                : `<td class="border border-slate-300 px-1.5 py-1"><div contenteditable="true" oninput="updateColTable(${idx}, ${ci}, ${r}, ${cc}, this.innerHTML)" style="${ty}" class="outline-none min-h-[1.4em]">${v}</div></td>`).join('')}</tr>`).join('')}</table>
+                                <div class="no-print flex flex-wrap gap-1 mt-1">${[['addRow', '+ صف'], ['delRow', '− صف'], ['addCol', '+ عمود'], ['delCol', '− عمود']].map(([o, l]) => `<button onclick="event.stopPropagation(); colTableEdit(${idx}, ${ci}, '${o}')" class="${bt}">${l}</button>`).join('')}</div>`;
+                        }
+                        return `<div class="no-print flex gap-1 mb-1">${kb(ci, 'text', 'نص')}${kb(ci, 'image', 'صورة')}${kb(ci, 'table', 'جدول')}</div>${body}`;
+                    };
+                    return `<div><div class="flex gap-4 items-start">${block.cols.map((c, ci) => `<div style="flex:0 0 calc(${W[ci]}% - 8px);min-width:0">${cell(c, ci)}</div>`).join('')}</div>
+                        <div class="no-print flex flex-wrap items-center gap-1 mt-2 text-[11px] text-slate-500"><span>التوزيع:</span>${sb('50', '50 / 50')}${sb('60', '60 / 40')}${sb('40', '40 / 60')}
+                            <button onclick="event.stopPropagation(); swapCols(${idx})" class="px-2 h-7 rounded-lg bg-slate-200 text-slate-700 font-bold text-[11px]"><i class="fa-solid fa-right-left"></i> تبديل العمودين</button></div></div>`;
+                }
                 case 'divider':
                     return `<div class="py-2"><hr style="border:0;border-top:3px solid ${block.color && block.color !== '#0f172a' ? block.color : '#c7d2fe'};border-radius:2px"></div>`;
                 case 'spacer':
@@ -1173,13 +1322,205 @@
                         <div class="bg-emerald-50 px-4 py-2 border-t border-amber-200"><span class="font-extrabold text-emerald-800 text-sm">✓ الحل</span>
                             <div contenteditable="true" oninput="updateBlockField(${idx}, 'solution', this.innerHTML)" style="${getBlockInlineTypography(block, 18, '#14532d', false)}" class="outline-none mt-1">${block.solution || ''}</div></div>
                     </div>`;
-                case 'image':
-                    return `<div class="flex flex-col items-center gap-1 py-1"><img src="${block.src}" draggable="false" style="width:${block.imgWidth || 70}%;max-width:100%;border-radius:12px"><div class="no-print flex gap-1"><button onclick="event.stopPropagation(); resizeImg(${idx}, -10)" class="w-8 h-8 rounded-lg bg-slate-200 font-black">−</button><button onclick="event.stopPropagation(); resizeImg(${idx}, 10)" class="w-8 h-8 rounded-lg bg-slate-200 font-black">+</button></div></div>`;
+                case 'image': {
+                    const al = block.align || 'center', jc = { right: 'flex-end', center: 'center', left: 'flex-start' }[al] || 'center';
+                    const ab = (a, ic, t) => `<button onclick="event.stopPropagation(); setImgAlign(${idx}, '${a}')" title="${t}" class="w-8 h-8 rounded-lg font-black ${al === a ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}"><i class="fa-solid ${ic} text-xs"></i></button>`;
+                    return `<div dir="ltr" class="py-1" style="display:flex;flex-direction:column;align-items:${jc}">
+                        <div style="width:${block.imgWidth || 70}%;max-width:100%">
+                            <img src="${block.src}" draggable="false" style="width:100%;display:block;border-radius:12px">
+                            <div contenteditable="true" dir="rtl" data-ph="اكتب تعليقاً تحت الصورة (اختياري)" oninput="updateBlockField(${idx}, 'caption', this.innerHTML)" class="img-caption outline-none text-center" style="font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;color:#475569;margin-top:6px">${block.caption || ''}</div>
+                        </div>
+                        <div class="no-print flex flex-wrap items-center gap-1 mt-1">
+                            <button onclick="event.stopPropagation(); resizeImg(${idx}, -10)" class="w-8 h-8 rounded-lg bg-slate-200 font-black">−</button>
+                            <button onclick="event.stopPropagation(); resizeImg(${idx}, 10)" class="w-8 h-8 rounded-lg bg-slate-200 font-black">+</button>
+                            <span class="w-px h-5 bg-slate-300 mx-1"></span>
+                            ${ab('right', 'fa-align-right', 'يمين')}${ab('center', 'fa-align-center', 'وسط')}${ab('left', 'fa-align-left', 'يسار')}
+                        </div></div>`;
+                }
                 default:
                     return '';
             }
         }
 
+        function escHTML(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function mathHTML(latex) {
+            latex = latex || '';
+            if (!latex.trim()) return '<span class="text-slate-400 text-sm">(معادلة فارغة)</span>';
+            try { if (window.katex) return katex.renderToString(latex, { throwOnError: false, displayMode: true, output: 'html' }); } catch (e) { }
+            return '<code dir="ltr" style="font-size:16px">' + escHTML(latex) + '</code>';
+        }
+        function mathWrapper(idx) { return document.querySelectorAll('#lesson-blocks-container .lesson-block')[idx]; }
+        function updateMath(idx, val) {
+            currentProject.pages[currentLessonPageIndex].blocks[idx].latex = val;
+            saveProjectsToStorage();
+            const w = mathWrapper(idx), el = w && w.querySelector('.math-render');
+            if (el) el.innerHTML = mathHTML(val);
+        }
+        function insertMath(idx, snippet) {
+            const w = mathWrapper(idx), ta = w && w.querySelector('textarea'); if (!ta) return;
+            const st = ta.selectionStart, en = ta.selectionEnd;
+            const sel = ta.value.slice(st, en);
+            let ins = snippet;
+            if (sel && snippet.includes('{}')) ins = snippet.replace('{}', '{' + sel + '}');
+            ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en);
+            let pos = st + ins.length;
+            if (!sel) { const k = ins.indexOf('{}'); if (k !== -1) pos = st + k + 1; }
+            ta.focus(); ta.setSelectionRange(pos, pos);
+            updateMath(idx, ta.value);
+        }
+        const NOTE_KINDS = {
+            remember: { name: 'تذكّر', ic: 'fa-bookmark', fg: '#075985', bg: '#e0f2fe', bd: '#7dd3fc' },
+            warning: { name: 'تنبيه', ic: 'fa-triangle-exclamation', fg: '#b91c1c', bg: '#fee2e2', bd: '#fca5a5' },
+            important: { name: 'مهم', ic: 'fa-star', fg: '#b45309', bg: '#fef3c7', bd: '#fcd34d' },
+            tip: { name: 'فائدة', ic: 'fa-lightbulb', fg: '#047857', bg: '#d1fae5', bd: '#6ee7b7' }
+        };
+        function setNoteKind(idx, k) {
+            const b = currentProject.pages[currentLessonPageIndex].blocks[idx];
+            const old = NOTE_KINDS[b.kind] || NOTE_KINDS.tip;
+            if (!b.title || b.title === old.name) b.title = NOTE_KINDS[k].name;   // نغيّر العنوان فقط إذا كان الافتراضي
+            b.kind = k;
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
+        function insertNote(k) {
+            const b = makeLessonBlock('note'); b.kind = k; b.title = NOTE_KINDS[k].name;
+            insertBlockObj(b); closeToolDrawer();
+        }
+        function listBlock(idx) { return currentProject.pages[currentLessonPageIndex].blocks[idx]; }
+        function focusListItem(idx, i, atEnd) {
+            const w = document.querySelectorAll('#lesson-blocks-container .lesson-block')[idx];
+            const el = w && w.querySelector(`[data-li="${i}"]`); if (!el) return;
+            el.focus();
+            const r = document.createRange(); r.selectNodeContents(el); r.collapse(!atEnd);
+            const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r);
+        }
+        function addListItem(idx, d, at) {
+            const b = listBlock(idx); b.items = b.items || [];
+            if (d > 0) { const p = (at === undefined) ? b.items.length : at; b.items.splice(p, 0, ''); saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx); focusListItem(idx, p, false); }
+            else if (b.items.length > 1) { b.items.pop(); saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx); }
+        }
+        function toggleNumStyle(idx) {
+            const b = listBlock(idx); b.numStyle = b.numStyle === 'abj' ? 'num' : 'abj';
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
+        function listKey(e, idx, i) {
+            const b = listBlock(idx);
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addListItem(idx, 1, i + 1); }
+            else if (e.key === 'Backspace' && !e.target.textContent.trim() && b.items.length > 1) {
+                e.preventDefault(); b.items.splice(i, 1);
+                saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx); focusListItem(idx, Math.max(0, i - 1), true);
+            }
+        }
+        function tocEntries(block) {
+            const out = [];
+            currentProject.pages.forEach((p, pi) => p.blocks.forEach(b => {
+                if (b.type === 'heading-main' || (block.levels === 'both' && b.type === 'heading-sub')) {
+                    const d = document.createElement('div'); d.innerHTML = b.content || '';
+                    const t = d.textContent.trim();
+                    if (t) out.push({ t, pi, sub: b.type === 'heading-sub' });
+                }
+            }));
+            return out;
+        }
+        function tocInner(block) {
+            const e = tocEntries(block);
+            if (!e.length) return '<div class="text-slate-400 text-sm py-2 text-center">لا توجد عناوين بعد. أضف عنواناً رئيسياً وسيظهر هنا.</div>';
+            return e.map(x => `<div onclick="tocGo(${x.pi})" class="flex items-baseline gap-2 py-1 cursor-pointer" style="${x.sub ? 'padding-inline-start:24px;font-size:15px;color:#475569;font-weight:600' : 'font-size:17px;color:#1e293b;font-weight:800'}"><span>${escHTML(x.t)}</span><span class="flex-1" style="border-bottom:2px dotted #94a3b8;transform:translateY(-4px)"></span><span style="font-weight:800;color:#4338ca">${x.pi + 1}</span></div>`).join('');
+        }
+        function refreshTocs() {
+            if (!currentProject) return;
+            const blocks = currentProject.pages[currentLessonPageIndex].blocks;
+            document.querySelectorAll('#lesson-blocks-container .lesson-block').forEach((w, i) => {
+                const b = blocks[i]; if (b && b.type === 'toc') { const l = w.querySelector('.toc-list'); if (l) l.innerHTML = tocInner(b); }
+            });
+        }
+        function toggleTocLevels(idx) {
+            const b = currentProject.pages[currentLessonPageIndex].blocks[idx];
+            b.levels = b.levels === 'both' ? 'main' : 'both';
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
+        function tocGo(pi) { if (document.querySelector('#preview-overlay.open')) return; if (window.goPage) goPage(pi + 1); }
+        function setImgAlign(idx, a) {
+            currentProject.pages[currentLessonPageIndex].blocks[idx].align = a;
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
+
+        // ===== ترتيب البلوكات بالسحب (يشتغل بالإصبع والماوس) =====
+        function startBlockDrag(e, idx) {
+            e.preventDefault(); e.stopPropagation();
+            const container = document.getElementById('lesson-blocks-container');
+            const vp = document.getElementById('canvas-viewport');
+            const els = [...container.querySelectorAll(':scope > .lesson-block')];
+            if (els.length < 2) return;
+            selectActiveLessonBlock(idx);
+            const src = els[idx], ind = document.createElement('div');
+            ind.id = 'drag-indicator'; document.body.appendChild(ind);
+            src.style.opacity = '.35'; document.body.classList.add('dragging-block');
+            let y = e.clientY, slot = idx, speed = 0;
+
+            function calc() {
+                const rs = els.map(el => el.getBoundingClientRect());
+                slot = 0; rs.forEach((r, i) => { if (y > r.top + r.height / 2) slot = i + 1; });
+                const cr = container.getBoundingClientRect();
+                let top = slot === 0 ? rs[0].top - 5 : slot === els.length ? rs[els.length - 1].bottom + 1 : (rs[slot - 1].bottom + rs[slot].top) / 2 - 2;
+                ind.style.top = top + 'px'; ind.style.left = cr.left + 'px'; ind.style.width = cr.width + 'px';
+            }
+            function move(ev) {
+                y = ev.clientY;
+                const vr = vp.getBoundingClientRect();
+                speed = y < vr.top + 60 ? -Math.ceil((vr.top + 60 - y) / 6) : y > vr.bottom - 60 ? Math.ceil((y - (vr.bottom - 60)) / 6) : 0;
+                calc();
+            }
+            const timer = setInterval(() => { if (speed) { vp.scrollTop += speed; calc(); } }, 16);
+            function end(ev) {
+                clearInterval(timer);
+                window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end);
+                ind.remove(); src.style.opacity = ''; document.body.classList.remove('dragging-block');
+                if (ev.type === 'pointercancel' || slot === idx || slot === idx + 1) return;
+                const bl = currentProject.pages[currentLessonPageIndex].blocks;
+                const [b] = bl.splice(idx, 1), to = slot > idx ? slot - 1 : slot;
+                bl.splice(to, 0, b);
+                saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(to);
+            }
+            window.addEventListener('pointermove', move); window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+            calc();
+        }
+        let colImgTarget = null;
+        function defaultCell(kind) {
+            if (kind === 'image') return { kind, src: '', caption: '' };
+            if (kind === 'table') return { kind, cells: [['العمود 1', 'العمود 2'], ['', ''], ['', '']] };
+            return { kind: 'text', content: 'اكتب النص هنا...' };
+        }
+        function colBlock(idx) { return currentProject.pages[currentLessonPageIndex].blocks[idx]; }
+        function colRefresh(idx) { saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx); }
+        function setColKind(idx, ci, k) { const b = colBlock(idx); if (b.cols[ci].kind === k) return; b.cols[ci] = defaultCell(k); colRefresh(idx); }
+        function updateColCell(idx, ci, f, v) { colBlock(idx).cols[ci][f] = v; saveProjectsToStorage(); }
+        function updateColTable(idx, ci, r, c, v) { colBlock(idx).cols[ci].cells[r][c] = v; saveProjectsToStorage(); }
+        function colTableEdit(idx, ci, op) {
+            const t = colBlock(idx).cols[ci].cells;
+            if (op === 'addRow') t.push(new Array(t[0].length).fill(''));
+            else if (op === 'delRow' && t.length > 2) t.pop();
+            else if (op === 'addCol' && t[0].length < 6) t.forEach(r => r.push(''));
+            else if (op === 'delCol' && t[0].length > 1) t.forEach(r => r.pop());
+            colRefresh(idx);
+        }
+        function setColSplit(idx, v) { colBlock(idx).split = v; colRefresh(idx); }
+        function swapCols(idx) { const b = colBlock(idx); b.cols.reverse(); colRefresh(idx); }
+        function pickColImage(idx, ci) { colImgTarget = { idx, ci }; pickImage('col'); }
+        function insertColsBlock(preset) {
+            const b = makeLessonBlock('cols');
+            b.cols = preset === 'text-table' ? [defaultCell('text'), defaultCell('table')] : preset === 'text-text' ? [defaultCell('text'), defaultCell('text')] : [defaultCell('text'), defaultCell('image')];
+            insertBlockObj(b); closeToolDrawer();
+        }
+        function qNum(block) {
+            let n = 0;
+            for (const p of currentProject.pages) for (const b of p.blocks) { if (b.type && b.type.startsWith('q-')) n++; if (b === block) return n; }
+            return n || 1;
+        }
+        function resizeLines(idx, d) {
+            const b = currentProject.pages[currentLessonPageIndex].blocks[idx];
+            b.lines = Math.min(15, Math.max(1, (b.lines || 3) + d));
+            saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx);
+        }
         function resizeSpacer(idx, d) {
             const b = currentProject.pages[currentLessonPageIndex].blocks[idx];
             b.h = Math.min(400, Math.max(20, (b.h || 40) + d));
@@ -1208,7 +1549,7 @@
             saveProjectsToStorage(); renderCurrentLessonPage(); selectActiveLessonBlock(idx + 1);
         }
         function updateListItem(idx, i, val) { currentProject.pages[currentLessonPageIndex].blocks[idx].items[i] = val; saveProjectsToStorage(); }
-        function updateBlockField(idx, field, val) { currentProject.pages[currentLessonPageIndex].blocks[idx][field] = val; saveProjectsToStorage(); }
+        function updateBlockField(idx, field, val) { currentProject.pages[currentLessonPageIndex].blocks[idx][field] = val; saveProjectsToStorage(); if (field === 'content') refreshTocs(); }
         function deleteLessonBlock(idx) { currentProject.pages[currentLessonPageIndex].blocks.splice(idx, 1); saveProjectsToStorage(); renderCurrentLessonPage(); }
 
         function selectActiveLessonBlock(idx) {
@@ -1349,13 +1690,30 @@
                         <button onclick="insertLessonBlock('heading-sub')" class="p-2 bg-teal-50 rounded-xl font-bold text-xs">+ عنوان فرعي</button>
                         <button onclick="insertLessonBlock('text')" class="p-2 bg-slate-100 rounded-xl font-bold text-xs">+ فقرة شرح</button>
                         <button onclick="insertLessonBlock('list-bullet')" class="p-2 bg-purple-50 rounded-xl font-bold text-xs">+ قائمة نقاط</button>
+                        <button onclick="insertLessonBlock('list-number')" class="p-2 bg-fuchsia-50 rounded-xl font-bold text-xs">+ قائمة مرقمة</button>
+                        <button onclick="insertLessonBlock('toc')" class="p-2 bg-orange-50 rounded-xl font-bold text-xs">+ فهرس تلقائي</button>
                     </div>`;
+            } else if (tool === 'quiz') {
+                document.getElementById('drawer-title').textContent = 'إدراج أسئلة واختبارات';
+                content.innerHTML = `<div class="grid grid-cols-2 gap-2">
+                    <button onclick="insertLessonBlock('q-mcq')" class="p-3 bg-indigo-50 rounded-xl font-bold text-xs">+ اختيار من متعدد (أ، ب، ج، د)</button>
+                    <button onclick="insertLessonBlock('q-fill')" class="p-3 bg-teal-50 rounded-xl font-bold text-xs">+ أكمل الفراغ</button>
+                    <button onclick="insertLessonBlock('q-tf')" class="p-3 bg-emerald-50 rounded-xl font-bold text-xs">+ صح أو خطأ</button>
+                    <button onclick="insertLessonBlock('q-essay')" class="p-3 bg-amber-50 rounded-xl font-bold text-xs">+ سؤال مقالي (بسطور)</button></div>`;
             } else if (tool === 'boxes') {
                 document.getElementById('drawer-title').textContent = 'إدراج قواعد وأمثلة وجداول';
                 content.innerHTML = `<div class="flex flex-wrap gap-2">
                     <button onclick="insertLessonBlock('rule')" class="p-3 bg-blue-50 rounded-xl font-bold text-xs">+ صندوق قاعدة / قانون</button>
                     <button onclick="insertLessonBlock('example')" class="p-3 bg-amber-100 text-amber-900 rounded-xl font-bold text-xs">+ مثال محلول (سؤال وحل)</button>
                     <button onclick="insertLessonBlock('table')" class="p-3 bg-purple-100 text-purple-900 rounded-xl font-bold text-xs">+ جدول</button>
+                    <button onclick="insertLessonBlock('math')" class="p-3 bg-sky-100 text-sky-900 rounded-xl font-bold text-xs">+ معادلة رياضية</button>
+                    <button onclick="insertNote('remember')" class="p-3 rounded-xl font-bold text-xs" style="background:#e0f2fe;color:#075985">+ تذكّر</button>
+                    <button onclick="insertNote('warning')" class="p-3 rounded-xl font-bold text-xs" style="background:#fee2e2;color:#b91c1c">+ تنبيه</button>
+                    <button onclick="insertNote('important')" class="p-3 rounded-xl font-bold text-xs" style="background:#fef3c7;color:#b45309">+ مهم</button>
+                    <button onclick="insertNote('tip')" class="p-3 rounded-xl font-bold text-xs" style="background:#d1fae5;color:#047857">+ فائدة</button>
+                    <button onclick="insertColsBlock('text-image')" class="p-3 bg-pink-100 text-pink-900 rounded-xl font-bold text-xs">+ عمودين: نص وصورة</button>
+                    <button onclick="insertColsBlock('text-table')" class="p-3 bg-pink-100 text-pink-900 rounded-xl font-bold text-xs">+ عمودين: شرح وجدول</button>
+                    <button onclick="insertColsBlock('text-text')" class="p-3 bg-pink-100 text-pink-900 rounded-xl font-bold text-xs">+ عمودين: نص ونص</button>
                     <button onclick="insertLessonBlock('divider')" class="p-3 bg-slate-100 rounded-xl font-bold text-xs">+ فاصل (خط)</button>
                     <button onclick="insertLessonBlock('spacer')" class="p-3 bg-slate-100 rounded-xl font-bold text-xs">+ مساحة فارغة</button></div>`;
             } else {
@@ -1372,10 +1730,19 @@
             else if (type === 'heading-sub') { newBlock.content = 'عنوان فرعي جديد'; newBlock.fontSize = 21; newBlock.color = '#0f766e'; newBlock.bold = true; }
             else if (type === 'text') { newBlock.content = 'اكتب النص هنا...'; }
             else if (type === 'list-bullet') { newBlock.items = ['النقطة الأولى...']; }
+            else if (type === 'list-number') { newBlock.items = ['البند الأول...', 'البند الثاني...']; newBlock.numStyle = 'num'; }
             else if (type === 'rule') { newBlock.title = 'قاعدة أساسية'; newBlock.body = 'نص القاعدة...'; }
             else if (type === 'example') { newBlock.question = 'اكتب نص السؤال هنا...'; newBlock.solution = 'اكتب خطوات الحل هنا...'; }
             else if (type === 'table') { newBlock.fontSize = 16; newBlock.cells = [['العمود 1', 'العمود 2', 'العمود 3'], ['', '', ''], ['', '', '']]; }
             else if (type === 'spacer') { newBlock.h = 40; }
+            else if (type === 'cols') { newBlock.split = '50'; newBlock.fontSize = 17; newBlock.cols = [defaultCell('text'), defaultCell('image')]; }
+            else if (type === 'toc') { newBlock.title = 'الفهرس'; newBlock.levels = 'main'; }
+            else if (type === 'note') { newBlock.kind = 'tip'; newBlock.title = 'فائدة'; newBlock.body = 'اكتب الملاحظة هنا...'; newBlock.fontSize = 16; }
+            else if (type === 'math') { newBlock.latex = 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'; newBlock.fontSize = 26; newBlock.align = 'center'; }
+            else if (type === 'q-mcq') { newBlock.question = 'اكتب نص السؤال هنا؟'; newBlock.items = ['الخيار الأول', 'الخيار الثاني', 'الخيار الثالث', 'الخيار الرابع']; newBlock.fontSize = 17; }
+            else if (type === 'q-fill') { newBlock.question = 'أكمل الفراغ: ........................................'; newBlock.fontSize = 17; }
+            else if (type === 'q-tf') { newBlock.question = 'اكتب العبارة هنا.'; newBlock.fontSize = 17; }
+            else if (type === 'q-essay') { newBlock.question = 'اكتب السؤال المقالي هنا.'; newBlock.lines = 3; newBlock.fontSize = 17; }
             return newBlock;
         }
         const LESSON_TEMPLATES = [
@@ -1431,16 +1798,423 @@
             showToast('تم نقل الباقي لصفحة جديدة');
         }
 
-        function exportAndPrintPDF() {
-            saveProjectsToStorage();
-            if (window.AndroidBridge && window.AndroidBridge.printPage) { window.AndroidBridge.printPage(); }
-            else { window.print(); }
-        }
 
         window.onload = function() {
             initStorage();
             renderHomeProjects();
         };
+
+        // =====================================================================
+        // تنقّل صفحة بصفحة (الغلاف = صفحة 0) + أدوات عائمة أسفل الشاشة
+        // =====================================================================
+        (function () {
+            const editor = document.getElementById('editor-view');
+            const vp = document.getElementById('canvas-viewport');
+            const drawer = document.getElementById('tool-drawer');
+
+            const pager = document.createElement('div');
+            pager.id = 'pager'; pager.className = 'no-print';
+            pager.innerHTML = `
+                <button id="pager-prev" title="السابق"><i class="fa-solid fa-chevron-right"></i></button>
+                <span id="pager-label"></span>
+                <button id="pager-next" title="التالي"><i class="fa-solid fa-chevron-left"></i></button>
+                <button onclick="openPagesManager()" title="ترتيب الصفحات"><i class="fa-solid fa-table-cells-large"></i></button>
+                <button onclick="openPreview()" title="معاينة" style="border-inline-start:1px solid rgba(255,255,255,.25);border-radius:0 999px 999px 0"><i class="fa-solid fa-eye text-amber-300"></i></button>`;
+            editor.appendChild(pager);
+            const prevBtn = pager.querySelector('#pager-prev'), nextBtn = pager.querySelector('#pager-next');
+            prevBtn.onclick = () => goPage(curSeq() - 1);
+            nextBtn.onclick = () => goPage(curSeq() + 1);
+
+            const curSeq = () => currentMode === 'cover' ? 0 : currentLessonPageIndex + 1;
+            const total = () => (currentProject ? currentProject.pages.length : 0) + 1;
+
+            function layoutFloating() {
+                const r = vp.getBoundingClientRect();
+                if (!r.width) return;
+                const bottom = (window.innerHeight - r.bottom);
+                drawer.style.left = r.left + 'px'; drawer.style.width = r.width + 'px'; drawer.style.bottom = bottom + 'px';
+                pager.style.left = (r.left + r.width / 2) + 'px'; pager.style.bottom = (bottom + 10) + 'px';
+                pager.style.display = drawer.classList.contains('hidden') ? 'flex' : 'none';
+            }
+            function updatePager() {
+                if (!currentProject) return;
+                const i = curSeq(), n = total();
+                pager.querySelector('#pager-label').textContent = i === 0 ? 'الغلاف' : `صفحة ${i} / ${n - 1}`;
+                prevBtn.disabled = i <= 0; nextBtn.disabled = i >= n - 1;
+                layoutFloating();
+            }
+
+            window.goPage = function (i, silent) {
+                const n = total();
+                i = Math.max(0, Math.min(n - 1, i));
+                const from = curSeq();
+                if (i === from) return;
+                closeToolDrawer();
+                if (i === 0) switchMode('cover');
+                else { currentLessonPageIndex = i - 1; if (currentMode !== 'lessons') switchMode('lessons'); else selectLessonPage(i - 1); }
+                vp.scrollTop = 0; vp.scrollLeft = 0;
+                if (!userZoomed) fitZoom();
+                updatePager();
+                const w = document.getElementById(i === 0 ? 'cover-canvas-wrapper' : 'lesson-canvas-wrapper');
+                if (w && w.animate) w.animate([{ transform: `translateX(${i > from ? -50 : 50}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: 'ease-out' });
+            };
+
+            // إبقاء المؤشر والأدوات متزامنة مع أي تغيير بالصفحات
+            const wrap = (name, after) => { const f = window[name]; window[name] = function () { const r = f.apply(this, arguments); after(); return r; }; };
+            wrap('renderLessonsPagesStrip', updatePager);
+            wrap('switchMode', updatePager);
+            wrap('openLessonDrawer', layoutFloating);
+            wrap('openCoverDrawer', layoutFloating);
+            wrap('closeToolDrawer', layoutFloating);
+            wrap('openProject', () => setTimeout(() => { if (!userZoomed) fitZoom(); updatePager(); }, 60));
+            new ResizeObserver(layoutFloating).observe(vp);
+            window.addEventListener('resize', layoutFloating);
+
+            // السحب يمين/يسار (على الموبايل)
+            let sx = 0, sy = 0, st = 0, multi = false, ok = false;
+            vp.addEventListener('touchstart', e => {
+                if (e.touches.length > 1) { multi = true; return; }
+                multi = false; sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+                ok = !e.target.closest('.cover-item, .ci-handle, table, input, select, textarea');
+            }, { passive: true });
+            vp.addEventListener('touchend', e => {
+                if (multi || !ok || e.touches.length) return;
+                const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+                const sel = getSelection();
+                if (sel && !sel.isCollapsed) return;
+                if (vp.scrollWidth > vp.clientWidth + 4) return;                 // مكبّر: السحب للتمرير
+                if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - st > 700) return;
+                goPage(curSeq() + (dx > 0 ? 1 : -1));                            // RTL: سحب من اليسار لليمين = التالي
+            }, { passive: true });
+
+            // الأسهم بلوحة المفاتيح (خارج حقول الكتابة)
+            document.addEventListener('keydown', e => {
+                if (editor.classList.contains('hidden') || document.querySelector('#preview-overlay.open, #pages-overlay.open') || e.ctrlKey || e.metaKey || e.altKey) return;
+                if (e.target.closest && e.target.closest('[contenteditable="true"], input, textarea, select')) return;
+                if (e.key === 'ArrowLeft') goPage(curSeq() + 1);
+                if (e.key === 'ArrowRight') goPage(curSeq() - 1);
+            });
+        })();
+
+        // =====================================================================
+        // المعاينة (ورقات A4 منفصلة) + تعبئة منطقة الطباعة
+        // =====================================================================
+        function buildSheet(kind, idx, forPrint) {
+            const p = currentProject, wrap = document.createElement('div');
+            const extra = 'preview-sheet' + (forPrint ? ' print-page' : '');
+            if (kind === 'cover') {
+                const c = p.cover;
+                wrap.innerHTML = `<div class="a4-paper cover-paper ${extra}">
+                    <div class="absolute inset-0 pointer-events-none" style="background:${c.bgStyle || '#fff'}"></div>
+                    <div class="${c.frame || 'frame-modern'}"></div>
+                    <div class="absolute inset-0 z-20 cv-layer"></div></div>`;
+                const layer = wrap.querySelector('.cv-layer');
+                c.items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'cover-item'; el.style.cursor = 'default';
+                    el.style.left = item.x + 'px'; el.style.top = item.y + 'px'; el.style.width = item.width + 'px';
+                    if (item.type === 'text') {
+                        el.style.fontFamily = `'${item.fontFamily || 'Cairo'}', sans-serif`;
+                        el.style.fontSize = (item.fontSize || 24) + 'px';
+                        el.style.color = item.color || '#0f172a';
+                        el.style.textAlign = item.align || 'center';
+                        el.style.fontWeight = item.bold ? '800' : '';
+                        el.innerHTML = `<div class="px-2 py-1">${item.text}</div>`;
+                    } else if (item.type === 'image') {
+                        el.innerHTML = `<img src="${item.src}" style="width:100%;display:block;border-radius:8px">`;
+                    }
+                    if (item.rot) el.style.transform = `rotate(${item.rot}deg)`;
+                    layer.appendChild(el);
+                });
+            } else {
+                const page = p.pages[idx];
+                wrap.innerHTML = `<div class="a4-paper lesson-paper px-10 py-8 ${extra}">
+                    <div>
+                        <div class="border-b-2 border-indigo-900/20 pb-3 mb-5 flex items-center justify-between text-xs text-slate-600 font-bold">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-indigo-600"></span><span>${p.headerTeacher || ''}</span></div>
+                            <div class="text-indigo-800 bg-indigo-50 px-3 py-1 rounded-full">${p.headerSubject || ''}</div>
+                        </div>
+                        <div class="pv-blocks space-y-3"></div>
+                    </div>
+                    <div class="border-t border-slate-200 pt-3 mt-6 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                        <span>${p.footerNote || ''}</span>
+                        <span class="bg-slate-800 text-white px-3 py-0.5 rounded-full font-bold">صفحة ${idx + 1}</span>
+                    </div></div>`;
+                const box = wrap.querySelector('.pv-blocks');
+                page.blocks.forEach((b, i) => {
+                    const w = document.createElement('div');
+                    w.className = 'rounded-xl'; w.style.border = '2px solid transparent';
+                    if (b.mt) w.style.marginTop = b.mt + 'px';
+                    if (b.dir) w.dir = b.dir;
+                    if (b.bg) { w.style.background = b.bg; w.style.padding = '10px'; w.style.borderRadius = '14px'; }
+                    w.innerHTML = renderSingleLessonBlockHTML(b, i);
+                    box.appendChild(w);
+                });
+                wrap.querySelectorAll('[contenteditable]').forEach(n => n.removeAttribute('contenteditable'));
+            }
+            return wrap.firstElementChild;
+        }
+
+        function buildAllSheets(forPrint) {
+            const out = [buildSheet('cover', 0, forPrint)];
+            currentProject.pages.forEach((_, i) => out.push(buildSheet('lesson', i, forPrint)));
+            return out;
+        }
+
+        function previewScale() { return Math.min(1, (window.innerWidth - 24) / 794); }
+        function openPreview() {
+            if (!currentProject) return;
+            saveProjectsToStorage();
+            let ov = document.getElementById('preview-overlay');
+            if (!ov) {
+                ov = document.createElement('div'); ov.id = 'preview-overlay'; ov.className = 'no-print';
+                ov.innerHTML = `
+                    <div class="bg-slate-900 text-white px-3 py-2.5 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2 font-extrabold text-sm"><i class="fa-solid fa-eye text-amber-300"></i><span>معاينة الملزمة</span><span id="pv-count" class="text-xs bg-slate-700 px-2 py-0.5 rounded-full"></span></div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openShareDialog()" class="bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-share-nodes"></i><span>مشاركة / حفظ</span></button>
+                            <button onclick="exportAndPrintPDF()" class="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-file-pdf"></i><span>طباعة / PDF</span></button>
+                            <button onclick="closePreview()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-xmark"></i><span>إغلاق</span></button>
+                        </div>
+                    </div>
+                    <div id="preview-scroll"></div>`;
+                document.body.appendChild(ov);
+            }
+            const sc = document.getElementById('preview-scroll'), k = previewScale();
+            sc.innerHTML = '';
+            const sheets = buildAllSheets(false);
+            sheets.forEach((sh, i) => {
+                const w = document.createElement('div'); w.className = 'sheet-wrap';
+                w.style.width = (794 * k) + 'px';
+                const inner = document.createElement('div'); inner.style.zoom = k; inner.appendChild(sh);
+                const lb = document.createElement('div'); lb.className = 'sheet-label';
+                lb.textContent = i === 0 ? 'الغلاف' : `صفحة ${i} من ${sheets.length - 1}`;
+                w.appendChild(inner); w.appendChild(lb); sc.appendChild(w);
+            });
+            document.getElementById('pv-count').textContent = sheets.length + ' ورقة';
+            ov.classList.add('open');
+            const cur = currentMode === 'cover' ? 0 : currentLessonPageIndex + 1;
+            const target = sc.children[cur];
+            sc.scrollTop = 0;
+            if (target) sc.scrollTop = target.offsetTop - 14;
+        }
+        function closePreview() {
+            const ov = document.getElementById('preview-overlay');
+            if (ov) { ov.classList.remove('open'); document.getElementById('preview-scroll').innerHTML = ''; }
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
+        window.addEventListener('resize', () => {
+            const ov = document.getElementById('preview-overlay');
+            if (ov && ov.classList.contains('open')) { const y = document.getElementById('preview-scroll').scrollTop; openPreview(); document.getElementById('preview-scroll').scrollTop = y; }
+        });
+
+        // الطباعة: تعبئة منطقة الطباعة بنفس الورقات، وانتظار الصور والخطوط قبل فتح نافذة الطباعة
+        function exportAndPrintPDF() {
+            saveProjectsToStorage();
+            const pa = document.getElementById('print-area');
+            pa.innerHTML = '';
+            buildAllSheets(true).forEach(sh => pa.appendChild(sh));
+            if (!pa.children.length) { showToast('ماكو صفحات للطباعة', 'error'); return; }
+            showToast('جاري تجهيز الصفحات للحفظ...');
+            const imgs = [...pa.querySelectorAll('img')];
+            const ready = Promise.all([
+                Promise.all(imgs.map(im => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()))),
+                (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve()
+            ]);
+            Promise.race([ready, new Promise(r => setTimeout(r, 4000))]).then(() => setTimeout(() => {
+                if (window.AndroidBridge && window.AndroidBridge.printPage) { window.AndroidBridge.printPage(); }
+                else { window.print(); }
+            }, 400));
+        }
+
+        // =====================================================================
+        // مدير الصفحات: مصغّرات + سحب لإعادة الترتيب
+        // =====================================================================
+        function openPagesManager() {
+            if (!currentProject) return;
+            saveProjectsToStorage();
+            let ov = document.getElementById('pages-overlay');
+            if (!ov) {
+                ov = document.createElement('div'); ov.id = 'pages-overlay'; ov.className = 'no-print';
+                ov.innerHTML = `
+                    <div class="bg-slate-900 text-white px-3 py-2.5 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2 font-extrabold text-sm"><i class="fa-solid fa-table-cells-large text-amber-300"></i><span>ترتيب الصفحات</span><span id="pm-count" class="text-xs bg-slate-700 px-2 py-0.5 rounded-full"></span></div>
+                        <button onclick="closePagesManager()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"><i class="fa-solid fa-check"></i><span>تم</span></button>
+                    </div>
+                    <div class="bg-slate-800 text-slate-300 text-[11px] px-3 py-1.5 shrink-0">اسحب الصفحة من المقبض ⋮⋮ وأفلتها فوق الصفحة اللي تريد تاخذ مكانها. اضغط على أي صفحة لفتحها. الغلاف يبقى أول ورقة.</div>
+                    <div id="pm-scroll" class="flex-1 overflow-auto p-4"><div id="pm-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-6xl mx-auto"></div></div>`;
+                document.body.appendChild(ov);
+            }
+            ov.classList.add('open');
+            renderPagesManager();
+        }
+        function closePagesManager() {
+            const ov = document.getElementById('pages-overlay');
+            if (ov) { ov.classList.remove('open'); document.getElementById('pm-grid').innerHTML = ''; }
+            if (currentMode === 'lessons') { renderLessonsPagesStrip(); renderCurrentLessonPage(); }
+        }
+        function renderPagesManager() {
+            const grid = document.getElementById('pm-grid'); if (!grid) return;
+            const sheets = buildAllSheets(false), cur = currentMode === 'cover' ? 0 : currentLessonPageIndex + 1;
+            grid.innerHTML = '';
+            sheets.forEach((sh, i) => {
+                const tile = document.createElement('div');
+                tile.className = 'pm-tile' + (i === cur ? ' pm-current' : ''); tile.dataset.i = i;
+                const th = document.createElement('div'); th.className = 'pm-thumb';
+                const inner = document.createElement('div'); inner.appendChild(sh); th.appendChild(inner);
+                const lb = document.createElement('div'); lb.className = 'pm-label'; lb.textContent = i === 0 ? 'الغلاف' : 'صفحة ' + i;
+                tile.appendChild(th); tile.appendChild(lb);
+                if (i > 0) {
+                    const g = document.createElement('div'); g.className = 'pm-grip'; g.title = 'اسحب لنقل الصفحة';
+                    g.innerHTML = '<i class="fa-solid fa-grip-vertical"></i>';
+                    g.addEventListener('pointerdown', ev => startPageDrag(ev, i - 1, tile));
+                    g.addEventListener('click', ev => ev.stopPropagation());
+                    tile.appendChild(g);
+                }
+                tile.addEventListener('click', () => { closePagesManager(); goPage(i); });
+                grid.appendChild(tile);
+                inner.style.zoom = (th.clientWidth || 150) / 794;
+            });
+            document.getElementById('pm-count').textContent = sheets.length + ' ورقة';
+        }
+        function startPageDrag(e, from, tile) {
+            e.preventDefault(); e.stopPropagation();
+            const grid = document.getElementById('pm-grid'), sc = document.getElementById('pm-scroll');
+            const tiles = [...grid.children], r = tile.getBoundingClientRect();
+            const ghost = tile.cloneNode(true);
+            ghost.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;z-index:95;pointer-events:none;opacity:.92;transform:rotate(3deg) scale(1.04);`;
+            document.body.appendChild(ghost);
+            const ox = e.clientX - r.left, oy = e.clientY - r.top;
+            tile.style.opacity = '.3';
+            let x = e.clientX, y = e.clientY, target = null, speed = 0;
+            function pick() {
+                tiles.forEach(t => t.classList.remove('pm-target')); target = null;
+                const el = document.elementFromPoint(x, y), t = el && el.closest && el.closest('.pm-tile');
+                if (t && t !== tile && t.dataset.i !== '0') { target = t; t.classList.add('pm-target'); }
+            }
+            function place() { ghost.style.left = (x - ox) + 'px'; ghost.style.top = (y - oy) + 'px'; }
+            function move(ev) {
+                x = ev.clientX; y = ev.clientY; place();
+                const sr = sc.getBoundingClientRect();
+                speed = y < sr.top + 70 ? -Math.ceil((sr.top + 70 - y) / 5) : y > sr.bottom - 70 ? Math.ceil((y - (sr.bottom - 70)) / 5) : 0;
+                pick();
+            }
+            const timer = setInterval(() => { if (speed) { sc.scrollTop += speed; pick(); } }, 16);
+            function end(ev) {
+                clearInterval(timer);
+                window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end);
+                ghost.remove(); tile.style.opacity = '';
+                const t = target; tiles.forEach(el => el.classList.remove('pm-target'));
+                if (ev.type === 'pointercancel' || !t) return;
+                const to = +t.dataset.i - 1; if (to === from) return;
+                const pages = currentProject.pages, curPage = pages[currentLessonPageIndex];
+                const [p] = pages.splice(from, 1); pages.splice(to, 0, p);
+                currentLessonPageIndex = Math.max(0, pages.indexOf(curPage));
+                saveProjectsToStorage(); renderPagesManager();
+                if (typeof showToast === 'function') showToast('تم نقل الصفحة إلى المكان ' + (to + 1));
+            }
+            window.addEventListener('pointermove', move); window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+            place(); pick();
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('pages-overlay'); if (o && o.classList.contains('open')) closePagesManager(); } });
+        window.addEventListener('resize', () => { const o = document.getElementById('pages-overlay'); if (o && o.classList.contains('open')) renderPagesManager(); });
+
+        // =====================================================================
+        // مشاركة (تيليكرام / واتساب ...) أو حفظ بالهاتف كملف PDF حقيقي
+        // =====================================================================
+        const PDF_LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
+        function loadScriptOnce(src) {
+            return new Promise((res, rej) => {
+                if ([...document.scripts].some(x => x.src === src && x.dataset.ok)) return res();
+                const el = document.createElement('script'); el.src = src;
+                el.onload = () => { el.dataset.ok = '1'; res(); };
+                el.onerror = () => rej(new Error('تعذر تحميل مكتبة PDF (تحقق من الإنترنت)'));
+                document.head.appendChild(el);
+            });
+        }
+        function pdfFileName() { return ((currentProject.title || 'ملزمة').replace(/[\\\/:*?"<>|]/g, '').trim() || 'ملزمة') + '.pdf'; }
+        let shareToken = 0, shareFile = null;
+
+        async function buildPdfBlob(onProgress, token) {
+            await Promise.all(PDF_LIBS.map(loadScriptOnce));
+            if (document.fonts && document.fonts.ready) await document.fonts.ready;
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+            const sheets = buildAllSheets(false), n = sheets.length;
+            const host = document.createElement('div');
+            host.style.cssText = 'position:fixed;left:0;top:0;width:794px;height:1123px;z-index:50;background:#fff;';
+            document.body.appendChild(host);
+            try {
+                for (let i = 0; i < n; i++) {
+                    if (token !== shareToken) throw new Error('cancel');
+                    onProgress(i, n);
+                    const sh = sheets[i]; sh.style.boxShadow = 'none';
+                    host.innerHTML = ''; host.appendChild(sh);
+                    await Promise.all([...sh.querySelectorAll('img')].map(im => im.decode ? im.decode().catch(() => { }) : 0));
+                    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 80)));
+                    const cv = await html2canvas(sh, { scale: 1.75, useCORS: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 794, windowHeight: 1123, scrollX: 0, scrollY: 0 });
+                    if (i > 0) pdf.addPage('a4', 'portrait');
+                    pdf.addImage(cv.toDataURL('image/jpeg', 0.88), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+                    cv.width = cv.height = 0;
+                }
+            } finally { host.remove(); }
+            onProgress(n, n);
+            return pdf.output('blob');
+        }
+
+        async function openShareDialog() {
+            if (!currentProject) return;
+            saveProjectsToStorage();
+            let ov = document.getElementById('share-overlay');
+            if (!ov) {
+                ov = document.createElement('div'); ov.id = 'share-overlay'; ov.className = 'no-print';
+                ov.style.cssText = 'position:fixed;inset:0;z-index:85;background:#334155;display:flex;align-items:center;justify-content:center;padding:16px;';
+                ov.innerHTML = `<div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-5 text-center">
+                    <div class="flex items-center justify-between mb-3"><div class="font-extrabold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-share-nodes text-sky-600"></i><span>مشاركة / حفظ الملزمة</span></div>
+                        <button onclick="closeShareDialog()" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600"><i class="fa-solid fa-xmark"></i></button></div>
+                    <div id="sh-status" class="text-sm text-slate-600 mb-3"></div>
+                    <div class="h-2.5 rounded-full bg-slate-200 overflow-hidden mb-4"><div id="sh-bar" class="h-full bg-sky-600" style="width:0%;transition:width .2s"></div></div>
+                    <div id="sh-actions" class="flex flex-col gap-2"></div></div>`;
+                document.body.appendChild(ov);
+            }
+            ov.style.display = 'flex';
+            const st = document.getElementById('sh-status'), bar = document.getElementById('sh-bar'), act = document.getElementById('sh-actions');
+            act.innerHTML = ''; bar.style.width = '0%'; bar.className = 'h-full bg-sky-600'; shareFile = null;
+            const token = ++shareToken;
+            st.textContent = 'جاري تجهيز ملف PDF...';
+            try {
+                const blob = await buildPdfBlob((i, n) => { st.textContent = i >= n ? 'تم تجهيز الملف' : `جاري تجهيز الصفحة ${i + 1} من ${n}...`; bar.style.width = Math.round(i / n * 100) + '%'; }, token);
+                if (token !== shareToken) return;
+                bar.style.width = '100%';
+                const name = pdfFileName();
+                shareFile = new File([blob], name, { type: 'application/pdf' });
+                const mb = (blob.size / 1048576).toFixed(1);
+                st.textContent = `الملف جاهز: ${name} (${mb} ميغا)`;
+                const canShare = !!(navigator.canShare && navigator.canShare({ files: [shareFile] }));
+                act.innerHTML = (canShare ? `<button onclick="doShareFile()" class="py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold flex items-center justify-center gap-2"><i class="fa-solid fa-paper-plane"></i><span>مشاركة (تيليكرام / واتساب / ...)</span></button>` : '')
+                    + `<button onclick="doSaveFile()" class="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold flex items-center justify-center gap-2"><i class="fa-solid fa-download"></i><span>حفظ في الهاتف</span></button>`
+                    + (canShare ? '' : '<div class="text-[11px] text-slate-500">المشاركة المباشرة غير مدعومة بهذا المتصفح. احفظ الملف ثم أرسله من الملفات.</div>');
+            } catch (e) {
+                if (token !== shareToken) return;
+                bar.className = 'h-full bg-rose-500'; st.textContent = 'تعذر تجهيز الملف: ' + (e && e.message ? e.message : 'خطأ');
+                act.innerHTML = `<button onclick="openShareDialog()" class="py-3 rounded-2xl bg-slate-800 text-white font-bold">إعادة المحاولة</button>
+                    <button onclick="closeShareDialog(); exportAndPrintPDF()" class="py-3 rounded-2xl bg-slate-100 text-slate-700 font-bold">بدلاً من ذلك: طباعة / حفظ PDF</button>`;
+            }
+        }
+        function closeShareDialog() { shareToken++; const ov = document.getElementById('share-overlay'); if (ov) ov.style.display = 'none'; }
+        async function doShareFile() {
+            if (!shareFile) return;
+            try { await navigator.share({ files: [shareFile], title: currentProject.title || 'ملزمة' }); }
+            catch (e) { if (e && e.name !== 'AbortError') showToast('تعذرت المشاركة، جرّب الحفظ في الهاتف', 'error'); }
+        }
+        function doSaveFile() {
+            if (!shareFile) return;
+            const url = URL.createObjectURL(shareFile), a = document.createElement('a');
+            a.href = url; a.download = shareFile.name; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            showToast('تم إرسال الملف للتنزيل، شوفه بمجلد التنزيلات');
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('share-overlay'); if (o && o.style.display === 'flex') closeShareDialog(); } });
     </script>
 </body>
 </html>
