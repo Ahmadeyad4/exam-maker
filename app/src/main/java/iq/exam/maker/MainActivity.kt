@@ -119,7 +119,11 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
+        // يرجّع لصفحة "ورقة" الرئيسية قبل ما يسكّر التطبيق
+        webView.evaluateJavascript(
+            "(function(){var f=document.getElementById('fab');" +
+            "if(f&&f.classList.contains('on')){goHome();return 1}return 0})()"
+        ) { v -> if (v != "1") super@MainActivity.onBackPressed() }
     }
 
     companion object {
