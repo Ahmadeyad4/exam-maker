@@ -2,6 +2,7 @@ package iq.exam.maker
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.print.PrintAttributes
@@ -14,6 +15,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : Activity() {
 
@@ -49,6 +52,47 @@ class MainActivity : Activity() {
         }
         webView.addJavascriptInterface(Bridge(), "AndroidBridge")
         webView.loadUrl("file:///android_asset/index.html")
+        checkForUpdate()
+    }
+
+    // يتحقق من آخر إصدار على GitHub ويطلع رسالة إذا أكو إصدار أحدث
+    private fun checkForUpdate() {
+        // رقم هذه النسخة يكتبه الـ workflow داخل assets/version.txt (غير موجود في بناء Android Studio، فيتخطى الفحص)
+        val current = try {
+            assets.open("version.txt").bufferedReader().use { it.readText().trim().toInt() }
+        } catch (e: Exception) { return }
+
+        Thread {
+            try {
+                val c = URL("https://api.github.com/repos/Ahmadeyad4/exam-maker/releases/latest")
+                    .openConnection() as HttpURLConnection
+                c.connectTimeout = 8000
+                c.readTimeout = 8000
+                c.setRequestProperty("Accept", "application/vnd.github+json")
+                val json = JSONObject(c.inputStream.bufferedReader().use { it.readText() })
+                val tag = json.getString("tag_name")
+                val latest = tag.substringAfterLast('.').toInt()
+                if (latest > current) {
+                    val files = json.getJSONArray("assets")
+                    val url = if (files.length() > 0)
+                        files.getJSONObject(0).getString("browser_download_url")
+                    else json.getString("html_url")
+                    runOnUiThread { showUpdateDialog(tag, url) }
+                }
+            } catch (e: Exception) { /* بدون إنترنت أو خطأ: نتجاهل بصمت */ }
+        }.start()
+    }
+
+    private fun showUpdateDialog(tag: String, url: String) {
+        if (isFinishing) return
+        AlertDialog.Builder(this)
+            .setTitle("يوجد تحديث جديد")
+            .setMessage("الإصدار $tag متوفر الآن. تريد تنزيله؟")
+            .setPositiveButton("تنزيل") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }
+            .setNegativeButton("لاحقاً", null)
+            .show()
     }
 
     private inner class Bridge {
