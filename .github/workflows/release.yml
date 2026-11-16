@@ -24,6 +24,11 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Write version number
+        run: |
+          mkdir -p app/src/main/assets
+          echo ${{ github.run_number }} > app/src/main/assets/version.txt
+
       - name: Build APK
         run: gradle assembleDebug --no-daemon
 
