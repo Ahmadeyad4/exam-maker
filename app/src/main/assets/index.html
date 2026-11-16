@@ -111,6 +111,8 @@ function showProjects(){
     b.onclick=()=>openApp(p.k,p.id);$('plist').appendChild(b)});
   show('projects');
 }
+/* الأندرويد يستدعي handleImportedText في الصفحة الرئيسية، فنمرّرها للتطبيق المفتوح داخل الإطار */
+function handleImportedText(t){document.querySelectorAll('.app.on iframe').forEach(f=>{try{f.contentWindow.handleImportedText&&f.contentWindow.handleImportedText(t)}catch(e){}})}
 window.addEventListener('storage',counts);counts();
 </script>
 </body></html>
