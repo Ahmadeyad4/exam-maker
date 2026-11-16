@@ -15,6 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # رقم الإصدار = رقم التشغيل + 17 (حتى يكمل بعد 1.25: التشغيل 9 يصير 1.26)
+      - name: Compute version number
+        run: echo "NUM=$(( ${{ github.run_number }} + 17 ))" >> "$GITHUB_ENV"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -27,17 +31,23 @@ jobs:
       - name: Write version number
         run: |
           mkdir -p app/src/main/assets
-          echo ${{ github.run_number }} > app/src/main/assets/version.txt
+          echo "$NUM" > app/src/main/assets/version.txt
 
       - name: Build APK
         run: gradle assembleDebug --no-daemon
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk exam-maker-v1.${{ github.run_number }}.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk "exam-maker-v1.$NUM.apk"
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exam-maker-apk
+          path: exam-maker-v1.${{ env.NUM }}.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.${{ github.run_number }}
-          name: Version 1.${{ github.run_number }}
-          files: exam-maker-v1.${{ github.run_number }}.apk
+          tag_name: v1.${{ env.NUM }}
+          name: Version 1.${{ env.NUM }}
+          files: exam-maker-v1.${{ env.NUM }}.apk
