@@ -39,20 +39,19 @@ jobs:
       # توقيع ثابت: نفس المفتاح كل مرة حتى أندرويد يقبل التحديث فوق القديم
       - name: Sign APK with fixed key
         env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          if [ -z "$KEYSTORE_B64" ] || [ -z "$KS_PASS" ] || [ -z "$KEY_ALIAS" ]; then
-            echo "::error::ناقص سر من الأسرار: KEYSTORE_B64 أو KEYSTORE_PASSWORD أو KEY_ALIAS"
+          if [ -z "$KS_PASS" ] || [ ! -f signing/release.jks.enc ]; then
+            echo "::error::ناقص سر KEYSTORE_PASSWORD أو ما شغّلت Make signing key"
             exit 1
           fi
-          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:KS_PASS \
+            -in signing/release.jks.enc -out "$RUNNER_TEMP/release.jks"
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" sign \
             --ks "$RUNNER_TEMP/release.jks" \
             --ks-pass env:KS_PASS --key-pass env:KS_PASS \
-            --ks-key-alias "$KEY_ALIAS" \
+            --ks-key-alias exam \
             --out "exam-maker-v1.$NUM.apk" \
             app/build/outputs/apk/debug/app-debug.apk
           "$APKSIGNER" verify --print-certs "exam-maker-v1.$NUM.apk" | head -3
