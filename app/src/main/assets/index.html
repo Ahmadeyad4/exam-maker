@@ -149,7 +149,7 @@ function mount(k){
 async function openApp(k,id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.app').forEach(a=>a.classList.toggle('on',a.id==='app-'+k));
-  $('fab').classList.add('on');
+  $('fab').classList.remove('on');
   const w=await mount(k);
   if(!w)return;
   try{
@@ -168,6 +168,22 @@ function showProjects(){
 }
 /* الأندرويد يستدعي handleImportedText في الصفحة الرئيسية، فنمرّرها للتطبيق المفتوح داخل الإطار */
 function handleImportedText(t){document.querySelectorAll('.app.on iframe').forEach(f=>{try{f.contentWindow.handleImportedText&&f.contentWindow.handleImportedText(t)}catch(e){}})}
+/* زر ورقة (الهوم) يظهر فقط بالقائمة الرئيسية للملزمة أو الأسئلة، ويختفي داخل المشروع لأن بي زر رجوع */
+function appAtHome(k){
+  try{
+    const f=$('app-'+k).querySelector('iframe');
+    if(!f)return true;
+    const d=f.contentDocument,w=f.contentWindow;
+    const el=d&&d.getElementById(k==='m'?'home-view':'start');
+    if(!el)return false;
+    return w.getComputedStyle(el).display!=='none';
+  }catch(e){return false}
+}
+function syncFab(){
+  const a=document.querySelector('.app.on');
+  $('fab').classList.toggle('on',!!a&&appAtHome(a.id.slice(4)));
+}
+setInterval(syncFab,250);
 window.addEventListener('storage',counts);counts();
 </script>
 </body></html>
