@@ -184,6 +184,27 @@ function syncFab(){
   $('fab').classList.toggle('on',!!a&&appAtHome(a.id.slice(4)));
 }
 setInterval(syncFab,250);
+/* زر الرجوع بالأندرويد: يرجع خطوة بدل ما يسكّر التطبيق. يرجع 1 إذا تعامل معه */
+function __back(){
+  try{
+    if(document.body.classList.contains('ph-on')){const x=$('phx');if(x){x.click();return 1}}
+    const a=document.querySelector('.app.on');
+    if(a){
+      const k=a.id.slice(4);
+      if(appAtHome(k)){goHome();return 1}
+      const f=a.querySelector('iframe'),w=f&&f.contentWindow;
+      try{
+        if(w){
+          if(k==='m'&&w.exitToHome){w.exitToHome();return 1}
+          if(k==='q'){w.eval('home()');return 1}
+        }
+      }catch(e){}
+      goHome();return 1;
+    }
+    if($('projects').classList.contains('on')){goHome();return 1}
+  }catch(e){}
+  return 0;
+}
 window.addEventListener('storage',counts);counts();
 </script>
 </body></html>
