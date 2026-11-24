@@ -34,7 +34,7 @@ jobs:
           echo "$NUM" > app/src/main/assets/version.txt
 
       - name: Build APK
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon -PverCode=$NUM
 
       # توقيع ثابت: نفس المفتاح كل مرة حتى أندرويد يقبل التحديث فوق القديم
       - name: Sign APK with fixed key
