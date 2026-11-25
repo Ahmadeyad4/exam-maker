@@ -6,6 +6,8 @@ import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ClipData
+import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -13,8 +15,10 @@ import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.print.PrintAttributes
 import android.print.PrintManager
+import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Base64
 import android.view.View
@@ -424,6 +428,36 @@ class MainActivity : Activity() {
         fun share(name: String, b64: String) {
             val bytes = try { Base64.decode(b64, Base64.DEFAULT) } catch (e: Exception) { return }
             runOnUiThread { shareBytes(name, bytes) }
+        }
+
+        // نسخة احتياطية تلقائية: تنكتب بمجلد التنزيلات/ورقة امتحان وتستبدل الملف السابق
+        @JavascriptInterface
+        fun autoSave(name: String, text: String): Boolean {
+            return try {
+                val resolver = contentResolver
+                val rel = Environment.DIRECTORY_DOWNLOADS + "/ورقة امتحان"
+                val coll = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                var uri: Uri? = null
+                resolver.query(
+                    coll, arrayOf(MediaStore.MediaColumns._ID),
+                    MediaStore.MediaColumns.DISPLAY_NAME + "=? AND " + MediaStore.MediaColumns.RELATIVE_PATH + "=?",
+                    arrayOf(name, "$rel/"), null
+                )?.use { c -> if (c.moveToFirst()) uri = ContentUris.withAppendedId(coll, c.getLong(0)) }
+                if (uri == null) {
+                    val v = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, rel)
+                    }
+                    uri = resolver.insert(coll, v)
+                }
+                val u = uri ?: return false
+                val out = resolver.openOutputStream(u, "wt") ?: return false
+                out.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+                true
+            } catch (e: Exception) {
+                false
+            }
         }
 
         // استيراد: يفتح نافذة اختيار ملف
