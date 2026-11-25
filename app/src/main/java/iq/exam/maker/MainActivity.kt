@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -369,6 +370,28 @@ class MainActivity : Activity() {
         startActivityForResult(i, REQ_SAVE)
     }
 
+    // مشاركة ملف عبر قائمة المشاركة (تيليكرام / واتساب / ...) من غير ما ينحفظ بالهاتف
+    private fun shareBytes(name: String, bytes: ByteArray) {
+        try {
+            val dir = File(cacheDir, "share")
+            dir.mkdirs()
+            dir.listFiles()?.forEach { it.delete() }
+            val safe = File(name).name.ifBlank { "file" }
+            File(dir, safe).writeBytes(bytes)
+            val uri = Uri.Builder().scheme("content").authority(ShareProvider.AUTH).appendPath(safe).build()
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = mimeFor(safe)
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, safe)
+                clipData = ClipData.newRawUri(safe, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(send, "مشاركة الملف"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "تعذرت المشاركة: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private inner class Bridge {
         @JavascriptInterface
         fun printPage() {
@@ -394,6 +417,13 @@ class MainActivity : Activity() {
             val bytes = try { Base64.decode(b64, Base64.DEFAULT) } catch (e: Exception) { return }
             pendingBytes = bytes
             runOnUiThread { launchSave(name, mimeFor(name)) }
+        }
+
+        // مشاركة أي ملف (PDF، Word...) من الصفحة بصيغة base64
+        @JavascriptInterface
+        fun share(name: String, b64: String) {
+            val bytes = try { Base64.decode(b64, Base64.DEFAULT) } catch (e: Exception) { return }
+            runOnUiThread { shareBytes(name, bytes) }
         }
 
         // استيراد: يفتح نافذة اختيار ملف
