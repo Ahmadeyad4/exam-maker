@@ -112,11 +112,28 @@ class MainActivity : Activity() {
     }
 
     // =====================  فحص التحديث  =====================
-    private fun checkForUpdate() {
-        // رقم هذه النسخة يكتبه الـ workflow داخل assets/version.txt
-        val current = try {
-            assets.open("version.txt").bufferedReader().use { it.readText().trim().toInt() }
-        } catch (e: Exception) { return }
+    // رقم هذه النسخة يكتبه الـ workflow داخل assets/version.txt (null بالبناء التجريبي)
+    private fun currentVersion(): Int? = try {
+        assets.open("version.txt").bufferedReader().use { it.readText().trim().toInt() }
+    } catch (e: Exception) { null }
+
+    // يبلّغ الصفحة بنتيجة الفحص (تنعرض بشاشة «عن التطبيق»)
+    private fun notifyUpdate(r: String) {
+        runOnUiThread {
+            webView.evaluateJavascript(
+                "window.onUpdateResult&&onUpdateResult(" + JSONObject.quote(r) + ")", null
+            )
+        }
+    }
+
+    // manual=true: فحص يدوي من زر «فحص التحديث» ويبلّغ بكل النتائج
+    private fun checkForUpdate(manual: Boolean = false) {
+        val current = currentVersion()
+        if (current == null) { if (manual) notifyUpdate("nover"); return }
+        if (manual && dlDialog?.isShowing == true) {
+            Toast.makeText(this, "التحميل شغّال هسه", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         Thread {
             try {
@@ -138,11 +155,19 @@ class MainActivity : Activity() {
                             url = a.getString("browser_download_url"); break
                         }
                     }
-                    if (url != null) runOnUiThread { showUpdateDialog(tag, url) }
+                    if (url != null) {
+                        notifyUpdate("new:$tag")
+                        runOnUiThread { if (dlDialog?.isShowing != true) showUpdateDialog(tag, url) }
+                    } else if (manual) {
+                        notifyUpdate("error")
+                    }
                 } else {
+                    notifyUpdate("uptodate")
                     cleanUpdateFiles()
                 }
-            } catch (e: Exception) { /* بدون إنترنت أو خطأ: نتجاهل بصمت */ }
+            } catch (e: Exception) {
+                if (manual) notifyUpdate("error") // بالفحص التلقائي نتجاهل بصمت
+            }
         }.start()
     }
 
@@ -458,6 +483,19 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 false
             }
+        }
+
+        // رقم النسخة المثبتة (مثال 1.47) أو فاضي إذا نسخة تجريبية
+        @JavascriptInterface
+        fun appVersion(): String {
+            val n = currentVersion()
+            return if (n != null) "1.$n" else ""
+        }
+
+        // فحص التحديث يدوياً: النتيجة ترجع للصفحة عبر onUpdateResult
+        @JavascriptInterface
+        fun checkUpdate() {
+            runOnUiThread { checkForUpdate(true) }
         }
 
         // استيراد: يفتح نافذة اختيار ملف
